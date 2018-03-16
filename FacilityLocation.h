@@ -39,7 +39,7 @@ public:
 
 	/* solve the LP-relaxed facility location problem */
 	// ∏Ì¿Â
-	void LP_solve();
+	double LP_solve();
 
 	/* round the LP-relaxed solution to the original problem's solution */
 	// ¿ØπŒ
