@@ -7,7 +7,77 @@ void FacilityLocation::random_sample(void)
 
 double FacilityLocation::LP_solve(void)
 {
-	return 0;
+	IloEnv env;
+
+	/* set and initialize connection variables */
+	IloNumVar x[NUM_OF_C * NUM_OF_F];
+	for (int i = 0; i < NUM_OF_F; ++i) {
+		for (int j = 0; j < NUM_OF_C; ++j) {
+			x[i*NUM_OF_C + j] = IloNumVar(env, 0, IloInfinity);
+		}
+	}
+
+	/* set and initialize opening variables */
+	IloNumVar y[NUM_OF_F];
+	for (int i = 0; i < NUM_OF_F; ++i)
+		y[i] = IloNumVar(env, 0, IloInfinity);
+
+	/* set ranges of sums of connection variables (1 <= sum_i(x_ij) <= 1 for all j) */
+	IloRange sum_range[NUM_OF_C];
+	for (int j = 0; j < NUM_OF_C; ++j) {
+		sum_range[j] = IloRange(env, 1, 1);
+		for (int i = 0; i < NUM_OF_F; ++i) {
+			sum_range[j].setLinearCoef(x[i*NUM_OF_C + j], 1);
+		}
+	}
+
+	/* set ranges of connection variables and opening variables (-inf <= x_ij - y_i <= 0 for all i, j) */
+	IloRange x_range[NUM_OF_C * NUM_OF_F];
+	for (int i = 0; i < NUM_OF_F; ++i) {
+		for (int j = 0; j < NUM_OF_C; ++j) {
+			x_range[i * NUM_OF_C + j] = IloRange(env, -IloInfinity, 0);
+			x_range[i * NUM_OF_C + j].setLinearCoef(x[i*NUM_OF_C + j], 1);
+			x_range[i * NUM_OF_C + j].setLinearCoef(y[i], -1);
+		}
+	}
+
+	/* set the obj fct (minimize sum_i(y_i*f_i) + sum_{i,j}(x_ij*d(i,j)) )*/
+	IloObjective obj = IloMinimize(env, 0);
+	for (int i = 0; i < NUM_OF_F; ++i) {
+		obj.setLinearCoef(y[i], this->opening_cost[i]);
+		for (int j = 0; j < NUM_OF_C; ++j) {
+			obj.setLinearCoef(x[i*NUM_OF_C + j], this->connection_cost[i*NUM_OF_C + j]);
+		}
+	}
+
+	/* compile the model */
+	IloModel model(env);
+	for (int j = 0; j < NUM_OF_C; ++j) {
+		model.add(sum_range[j]);
+		for (int i = 0; i < NUM_OF_F; ++i) {
+			model.add(x_range[i*NUM_OF_C + j]);
+		}
+	}
+	model.add(obj);
+
+	/* solve the model */
+	IloCplex solver(model);
+	try {
+		solver.solve();
+	}
+	catch (IloException &ex) {
+		cerr << ex << endl;
+	}
+	cout << solver.getObjValue() << endl;
+	cout << solver.getValue(x[0]) << endl;
+	/* save results*/
+	for (int i = 0; i < NUM_OF_F; ++i) {
+		this->opening_variable[i] = solver.getValue(y[i]);
+		for (int j = 0; j < NUM_OF_C; ++j) {
+			this->connection_variable[i*NUM_OF_C + j] = solver.getValue(x[i*NUM_OF_C + j]);
+		}
+	}
+	return solver.getObjValue();
 }
 
 void FacilityLocation::round(void)
@@ -39,8 +109,8 @@ FacilityLocation::FacilityLocation(void)
 
 	/*
 	for (int i = 0; i < NUM_OF_F; ++i) {
-		//cout << i << " : " << p[i] << endl;
-		printf("%lf\n", p[i]);
+	//cout << i << " : " << p[i] << endl;
+	printf("%lf\n", p[i]);
 	}*/
 
 	/* generation of the orders of the cliendts */
@@ -49,7 +119,7 @@ FacilityLocation::FacilityLocation(void)
 	// set some values:
 	for (int i = 0; i < NUM_OF_C; ++i) myvector.push_back(i); // 1 2 3 4 5 6 7 8 9
 
-													  // using built-in random generator:
+															  // using built-in random generator:
 	std::random_shuffle(myvector.begin(), myvector.end());
 
 	// using myrandom:
@@ -76,23 +146,21 @@ FacilityLocation::FacilityLocation(void)
 	// print out content:
 	
 	for (int i = 0; i < NUM_OF_C; i++) {
-		if (order_of_client[i] == 0) cout << "0이다!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
-		cout << "c" << i << ": " << order_of_client[i] << endl;
+
+	cout << "c" << i << ": " << order_of_client[i] << endl;
 	}
 	for (int i = 0; i < NUM_OF_F; i++) {
-		if (exponential_clock[i] == 0) cout << "0이다!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
-		cout << "f" << i << ": " << exponential_clock[i] << endl;
+	cout << "f" << i << ": " << exponential_clock[i] << endl;
 	}
 	cout << "---------cost---------------" << endl;
 
 	for (int i = 0; i < NUM_OF_F*NUM_OF_C; i++) {
-		if (connection_cost[i] == 0) cout << "0이다!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
-		cout << "c" << i << ": " << connection_cost[i] << endl;
+
+	cout << "c" << i << ": " << connection_cost[i] << endl;
 	}
 
 	for (int i = 0; i < NUM_OF_F; i++) {
-		if (opening_cost[i] == 0) cout << "0이다!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
-		cout << "f" << i << ": " << opening_cost[i] << endl;
+	cout << "f" << i << ": " << opening_cost[i] << endl;
 	}
 	
 }
@@ -103,7 +171,25 @@ void FacilityLocation::brute_force(void)
 
 }
 
-unsigned int FacilityLocation::objective(void) 
+unsigned int FacilityLocation::objective(bool optimal = 0)
 {
-	return 0;
+	unsigned int sol = 0;
+	if (optimal) {
+		for (int i = 0; i < NUM_OF_F; ++i) {
+			sol += (unsigned int)this->optimal_opening_table[i] * this->opening_cost[i];
+			for (int j = 0; j < NUM_OF_C; ++j) {
+				sol += (unsigned int)this->optimal_connection_table[i*NUM_OF_C + j] * this->connection_cost[i*NUM_OF_C + j];
+			}
+		}
+	}
+	else {
+		for (int i = 0; i < NUM_OF_F; ++i) {
+			sol += (unsigned int)this->opening_table[i] * this->opening_cost[i];
+			for (int j = 0; j < NUM_OF_C; ++j) {
+				sol += (unsigned int)this->connection_table[i*NUM_OF_C + j] * this->connection_cost[i*NUM_OF_C + j];
+			}
+		}
+
+	}
+	return sol;
 }

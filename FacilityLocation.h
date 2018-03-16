@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include <cstdlib>
 #include <ilcplex/ilocplex.h>
 #include <random>
 #include <string>
@@ -9,8 +10,8 @@
 #include <cstdlib>      // std::rand, std::srand
 using namespace std;
 
-#define NUM_OF_F 10
-#define NUM_OF_C 100
+#define NUM_OF_F 3
+#define NUM_OF_C 10
 class FacilityLocation {
 private:
 	/* Input of LP-solver */
@@ -42,7 +43,7 @@ public:
 	/* randomly sample expnential clocks of facilities */
 	// «–ºˆ
 	void random_sample();
-	
+
 	/* solve the LP-relaxed facility location problem */
 	// ∏Ì¿Â
 	double LP_solve();
@@ -50,12 +51,13 @@ public:
 	/* round the LP-relaxed solution to the original problem's solution */
 	// ¿ØπŒ
 	void round();
-	 
+
 	/* check all possible solutions and pick the minimum cost (brute-force) */
 	// ¿ØπŒ
 	void brute_force();
 
 	/* compare LP rounded solution and optimal solution */
 	// ∏Ì¿Â
-	unsigned int objective();
+	unsigned int objective(bool optimal);
+
 };
