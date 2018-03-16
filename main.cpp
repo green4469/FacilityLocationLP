@@ -9,5 +9,6 @@ int main(void)
 	ex.brute_force();
 	ex.objective();
 
+	system("pause");
 	return 0;
 }

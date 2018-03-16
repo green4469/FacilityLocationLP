@@ -2,7 +2,12 @@
 #include <iostream>
 #include <cstdlib>
 #include <ilcplex/ilocplex.h>
-
+#include <random>
+#include <string>
+#include <algorithm>    // std::random_shuffle
+#include <vector>       // std::vector
+#include <ctime>        // std::time
+#include <cstdlib>      // std::rand, std::srand
 using namespace std;
 
 #define NUM_OF_F 10
@@ -19,6 +24,8 @@ private:
 
 	/* exponential clocks of facilities */
 	double exponential_clock[NUM_OF_F];
+	/* the order of the exponential clocks of the clients by ascending*/
+	int order_of_client[NUM_OF_C];
 
 	/* output of Rounding Algorithm */
 	bool opening_table[NUM_OF_F];
@@ -52,4 +59,5 @@ public:
 	/* compare LP rounded solution and optimal solution */
 	// Ένΐε
 	unsigned int objective(bool optimal);
+
 };
