@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include <cstdlib>
 #include <ilcplex/ilocplex.h>
 
 using namespace std;
@@ -9,8 +10,8 @@ using namespace std;
 class FacilityLocation {
 private:
 	/* Input of LP-solver */
-	int opening_cost[NUM_OF_F];
-	int connection_cost[NUM_OF_C * NUM_OF_F];
+	unsigned int opening_cost[NUM_OF_F];
+	unsigned int connection_cost[NUM_OF_C * NUM_OF_F];
 
 	/* output of LP-solver */
 	double opening_variable[NUM_OF_F];
@@ -35,7 +36,7 @@ public:
 	/* randomly sample expnential clocks of facilities */
 	// «–ºˆ
 	void random_sample();
-	
+
 	/* solve the LP-relaxed facility location problem */
 	// ∏Ì¿Â
 	void LP_solve();
@@ -43,12 +44,12 @@ public:
 	/* round the LP-relaxed solution to the original problem's solution */
 	// ¿ØπŒ
 	void round();
-	 
+
 	/* check all possible solutions and pick the minimum cost (brute-force) */
 	// ¿ØπŒ
 	void brute_force();
 
 	/* compare LP rounded solution and optimal solution */
 	// ∏Ì¿Â
-	void objective();
+	unsigned int objective(bool optimal);
 };
