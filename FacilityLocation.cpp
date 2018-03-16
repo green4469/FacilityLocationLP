@@ -74,23 +74,27 @@ FacilityLocation::FacilityLocation(void)
 	}
 
 	// print out content:
-	/*
+	
 	for (int i = 0; i < NUM_OF_C; i++) {
+		if (order_of_client[i] == 0) cout << "0이다!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
 		cout << "c" << i << ": " << order_of_client[i] << endl;
 	}
 	for (int i = 0; i < NUM_OF_F; i++) {
+		if (exponential_clock[i] == 0) cout << "0이다!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
 		cout << "f" << i << ": " << exponential_clock[i] << endl;
 	}
 	cout << "---------cost---------------" << endl;
 
 	for (int i = 0; i < NUM_OF_F*NUM_OF_C; i++) {
+		if (connection_cost[i] == 0) cout << "0이다!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
 		cout << "c" << i << ": " << connection_cost[i] << endl;
 	}
 
 	for (int i = 0; i < NUM_OF_F; i++) {
+		if (opening_cost[i] == 0) cout << "0이다!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
 		cout << "f" << i << ": " << opening_cost[i] << endl;
 	}
-	*/
+	
 }
 
 
