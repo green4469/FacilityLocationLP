@@ -1,16 +1,28 @@
 #pragma once
 #include <iostream>
 #include <ilcplex/ilocplex.h>
+#include <random>
+#include <string>
+#include <algorithm>    // std::random_shuffle
+#include <vector>       // std::vector
+#include <ctime>        // std::time
+#include <cstdlib>      // std::rand, std::srand
 
 using namespace std;
 
-#define NUM_OF_F 10
-#define NUM_OF_C 100
+#define NUM_OF_F 3
+#define NUM_OF_C 10
 class FacilityLocation {
 private:
+	/* Rounded problem's cost */
+	int rounded_cost;
+
+	/* Original problem's optimal cost */
+	int optimal_cost;
+
 	/* Input of LP-solver */
-	int opening_cost[NUM_OF_F];
-	int connection_cost[NUM_OF_C * NUM_OF_F];
+	unsigned int opening_cost[NUM_OF_F];
+	unsigned int connection_cost[NUM_OF_C * NUM_OF_F];
 
 	/* output of LP-solver */
 	double opening_variable[NUM_OF_F];
@@ -18,6 +30,8 @@ private:
 
 	/* exponential clocks of facilities */
 	double exponential_clock[NUM_OF_F];
+	/* the order of the exponential clocks of the clients by ascending */
+	int order_of_client[NUM_OF_C];
 
 	/* output of Rounding Algorithm */
 	bool opening_table[NUM_OF_F];
@@ -38,7 +52,7 @@ public:
 	
 	/* solve the LP-relaxed facility location problem */
 	// ∏Ì¿Â
-	void LP_solve();
+	double LP_solve();
 
 	/* round the LP-relaxed solution to the original problem's solution */
 	// ¿ØπŒ
@@ -48,7 +62,11 @@ public:
 	// ¿ØπŒ
 	void brute_force();
 
+	friend int calculate_func(bool *connection_table, FacilityLocation *fcl, int *min);
+
 	/* compare LP rounded solution and optimal solution */
 	// ∏Ì¿Â
-	void objective();
+	unsigned int objective(bool optimal);
+
+
 };
