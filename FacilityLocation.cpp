@@ -171,7 +171,7 @@ void FacilityLocation::brute_force(void)
 
 }
 
-unsigned int FacilityLocation::objective(bool optimal = 0)
+unsigned int FacilityLocation::objective(bool optimal)
 {
 	unsigned int sol = 0;
 	if (optimal) {

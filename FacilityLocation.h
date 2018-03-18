@@ -10,8 +10,8 @@
 #include <cstdlib>      // std::rand, std::srand
 using namespace std;
 
-#define NUM_OF_F 3
-#define NUM_OF_C 10
+#define NUM_OF_F 10
+#define NUM_OF_C 100
 class FacilityLocation {
 private:
 	/* Input of LP-solver */
@@ -58,6 +58,6 @@ public:
 
 	/* compare LP rounded solution and optimal solution */
 	// Ένΐε
-	unsigned int objective(bool optimal);
+	unsigned int objective(bool optimal = 0);
 
 };
