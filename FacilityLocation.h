@@ -14,10 +14,10 @@ using namespace std;
 #define NUM_OF_C 10
 class FacilityLocation {
 private:
-	/* Rounded problem's cost */
+	/* Rounded problem's objective function's cost */
 	int rounded_cost;
 
-	/* Original problem's optimal cost */
+	/* Original problem's objective function's optimal cost */
 	int optimal_cost;
 
 	/* Input of LP-solver */
@@ -42,13 +42,9 @@ private:
 	bool optimal_connection_table[NUM_OF_C * NUM_OF_F];
 
 public:
-	/* constructor, inside it initialize the oppening cost, connection cost */
+	/* constructor, inside it initialize the oppening cost, connection cost, clients' clocks, facilities' clocks */
 	// 학수
 	FacilityLocation();
-
-	/* randomly sample expnential clocks of facilities */
-	// 학수
-	void random_sample();
 	
 	/* solve the LP-relaxed facility location problem */
 	// 명장
@@ -62,11 +58,11 @@ public:
 	// 유민
 	void brute_force();
 
-	friend int calculate_func(bool *connection_table, FacilityLocation *fcl, int *min);
+	friend void calculate_func(bool *connection_table, FacilityLocation *fcl, int *min);
 
 	/* compare LP rounded solution and optimal solution */
 	// 명장
-	unsigned int objective(bool optimal);
+	unsigned int objective(bool optimal=0);
 
 
 };

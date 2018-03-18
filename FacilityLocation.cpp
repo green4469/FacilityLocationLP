@@ -1,35 +1,14 @@
 #include "FacilityLocation.h"
 
-void FacilityLocation::random_sample(void)
-{
-
-}
-
 double FacilityLocation::LP_solve(void)
 {
 	
 }
 
-// random generator function:
-int myrandom(int i) { return std::rand() % i; }
-
 void FacilityLocation::round(void)
 {
 	for (int i = 0; i < NUM_OF_F; i++)
 		opening_table[i] = 0;
-
-	random_sample();  // facility exponential clocks
-
-	// {0, 1, 2, ..., NUM_OF_C - 1} ==RANDOM_SORT==> {4, 6, 1, ..., 2}
-	std::srand(unsigned(std::time(0)));
-	std::vector<int> myvector;
-	for (int i = 0; i<NUM_OF_C; ++i) myvector.push_back(i); // 0 1 2 3 4 5 6 7 8 9 ...
-	std::random_shuffle(myvector.begin(), myvector.end(), myrandom);
-	// store randomly sorted vector to list.
-	int i = 0;
-	for (std::vector<int>::iterator it = myvector.begin(); it != myvector.end(); ++it) {
-		order_of_client[i++] = *it;
-	}
 
 	for (int j = 0; j < NUM_OF_C; j++) {
 		double min = 99999999;
@@ -88,7 +67,7 @@ FacilityLocation::FacilityLocation(void)
 
 }
 
-int calculate_func(bool *connection_table, FacilityLocation *fcl, int *min)
+void calculate_func(bool *connection_table, FacilityLocation *fcl, int *min)
 {
 	bool opening_table[NUM_OF_F] = { 0 };
 	int total_opening_cost = 0, total_connection_cost = 0;
@@ -116,7 +95,7 @@ int calculate_func(bool *connection_table, FacilityLocation *fcl, int *min)
 				fcl->optimal_connection_table[i * NUM_OF_F + j] = connection_table[i * NUM_OF_F + j];
 	}
 
-	return total_opening_cost + total_connection_cost;
+	fcl->optimal_cost = total_opening_cost + total_connection_cost;
 }
 
 void recursive_func(bool *connection_table, int index, FacilityLocation *fcl, int *min)
