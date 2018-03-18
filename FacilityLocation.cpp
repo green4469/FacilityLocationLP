@@ -88,30 +88,30 @@ void FacilityLocation::round(void)
 		int min_client = order_of_client[j];
 		int min_facility, min_facility_client;
 		for (int i = 0; i < NUM_OF_F; i++) {
-			if (connection_variable[min_client * NUM_OF_F + i] > 0 && exponential_clock[i] < min) {
+			if (connection_variable[min_client + i*NUM_OF_C] > 0 && exponential_clock[i] < min) {
 				min_facility = i;
 				min = exponential_clock[i];
 			}
 		}
 		min = 999999999;
-		for (int i = 0; i < NUM_OF_C; i++) {
-			if (connection_variable[i * NUM_OF_F + min_facility] > 0 && order_of_client[i] < min) {
-				min_facility_client = i;
-				min = order_of_client[i];
+		for (int j_ = 0; j_ < NUM_OF_C; j_++) {
+			if (connection_variable[j_ + min_facility*NUM_OF_C] > 0 && order_of_client[j_] < min) {
+				min_facility_client = j_;
+				min = order_of_client[j_];
 			}
 		}
 
 		if (min_client == min_facility_client) {  // if j == j'
 			opening_table[min_facility] = 1;  // open i
-			connection_table[min_client * NUM_OF_F + min_facility] = 1;  // connect j to i
+			connection_table[min_client + min_facility*NUM_OF_C] = 1;  // connect j to i
 		}
 		else {  // connect j to the same facility as j'
 			int min_facility_client_facility = 0;
 			for (int i = 0; i < NUM_OF_F; i++) {  // find the facility connected to j'(min_client_facility)
-				if (connection_table[min_facility_client * NUM_OF_F + i] == 1)
+				if (connection_table[min_facility_client + i * NUM_OF_C] == 1)
 					min_facility_client_facility = i;
 			}
-			connection_table[j * NUM_OF_F + min_facility_client_facility] = 1;
+			connection_table[j + min_facility_client_facility * NUM_OF_C] = 1;
 		}
 	}
 
@@ -119,15 +119,15 @@ void FacilityLocation::round(void)
 	bool tmp_opening_table[NUM_OF_F] = { 0 };
 	double total_opening_cost = 0, total_connection_cost = 0;
 
-		/* calculate total connection_cost */
-	for (int i = 0; i < NUM_OF_C; i++) {  // calculate total connection_cost
-		for (int j = 0; j < NUM_OF_F; j++) {
-			total_connection_cost += connection_table[i * NUM_OF_F + j] * connection_cost[i * NUM_OF_F + j];
-			tmp_opening_table[j] = connection_table[i * NUM_OF_F + j];
+	/* calculate total connection_cost */
+	for (int j = 0; j < NUM_OF_C; j++) {  // calculate total connection_cost
+		for (int i = 0; i < NUM_OF_F; i++) {
+			total_connection_cost += connection_table[i * NUM_OF_C + j] * connection_cost[i * NUM_OF_C + j];
+			tmp_opening_table[i] = connection_table[i * NUM_OF_C + j];
 		}
 	}
 
-		/* calculate total opening cost */
+	/* calculate total opening cost */
 	for (int i = 0; i < NUM_OF_F; i++) {
 		total_opening_cost += tmp_opening_table[i] * opening_cost[i];
 	}
@@ -251,16 +251,16 @@ FacilityLocation::FacilityLocation(void)
 	
 }
 
-void calculate_func(bool *connection_table, FacilityLocation *fcl, int *min)
+void calculate_func(bool *connection_table, FacilityLocation *fcl, double *min)
 {
 	bool opening_table[NUM_OF_F] = { 0 };
-	int total_opening_cost = 0, total_connection_cost = 0;
+	double total_opening_cost = 0, total_connection_cost = 0;
 
 	/* calculate total connection_cost */
-	for (int i = 0; i < NUM_OF_C; i++) {
-		for (int j = 0; j < NUM_OF_F; j++) {
-			total_connection_cost += connection_table[i * NUM_OF_F + j] * (fcl->connection_cost[i * NUM_OF_F + j]);
-			opening_table[j] = connection_table[i * NUM_OF_F + j];
+	for (int j = 0; j < NUM_OF_C; j++) {
+		for (int i = 0; i < NUM_OF_F; i++) {
+			total_connection_cost += connection_table[i * NUM_OF_C + j] * (fcl->connection_cost[i * NUM_OF_C + j]);
+			opening_table[i] += connection_table[i * NUM_OF_C + j];
 		}
 	}
 
@@ -274,23 +274,25 @@ void calculate_func(bool *connection_table, FacilityLocation *fcl, int *min)
 		*min = total_connection_cost + total_opening_cost;
 		for (int i = 0; i < NUM_OF_F; i++)
 			fcl->optimal_opening_table[i] = opening_table[i];
-		for (int i = 0; i < NUM_OF_C; i++)
-			for (int j = 0; j < NUM_OF_F; j++)
-				fcl->optimal_connection_table[i * NUM_OF_F + j] = connection_table[i * NUM_OF_F + j];
-	}
+		for (int j = 0; j < NUM_OF_C; j++)
+			for (int i = 0; i < NUM_OF_F; i++)
+				fcl->optimal_connection_table[i * NUM_OF_C + j] = connection_table[i * NUM_OF_C + j];
 
-	fcl->optimal_cost = total_opening_cost + total_connection_cost;
+		fcl->optimal_cost = total_opening_cost + total_connection_cost;
+
+	}
 }
 
-void recursive_func(bool *connection_table, int index, FacilityLocation *fcl, int *min)
+void recursive_func(bool *connection_table, int index, FacilityLocation *fcl, double *min)
 {
 	if (index >= NUM_OF_C)	return;  // base case
 	for (int i = 0; i < NUM_OF_F; i++) {
-		connection_table[index * NUM_OF_F + i] = 1;
+		connection_table[i*NUM_OF_C + index] = 1;
 		recursive_func(connection_table, index + 1, fcl, min); // recursive call
 		calculate_func(connection_table, fcl, min);
-		connection_table[index * NUM_OF_F + i] = 0;
+		connection_table[i*NUM_OF_C + index] = 0;
 	}
+	connection_table[index] = 1;
 }
 
 void FacilityLocation::brute_force(void)
@@ -300,15 +302,16 @@ void FacilityLocation::brute_force(void)
 	/* save the optimal solution to 'optimal_opening_table', 'optimal_connection_table' */
 
 	bool connection_table[NUM_OF_C * NUM_OF_F] = { 0 };
-	int min = 999999999;
+	double min = 999999999;
 
 	recursive_func(connection_table, 0, this, &min);
 	cout << "Optimal Solution: " << min << endl;
 }
 
-unsigned int FacilityLocation::objective(bool optimal)
+double FacilityLocation::objective(bool optimal)
 {
-	unsigned int sol = 0;
+
+	double sol = 0;
 	if (optimal) {
 		for (int i = 0; i < NUM_OF_F; ++i) {
 			sol += (double)this->optimal_opening_table[i] * this->opening_cost[i];

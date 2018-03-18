@@ -11,15 +11,16 @@
 #include <math.h>
 using namespace std;
 
+
 #define NUM_OF_F 10
-#define NUM_OF_C 100
+#define NUM_OF_C 5
 class FacilityLocation {
 private:
 	/* Rounded problem's objective function's cost */
-	int rounded_cost;
+	double rounded_cost;
 
 	/* Original problem's objective function's optimal cost */
-	int optimal_cost;
+	double optimal_cost;
 
 	/* Input of LP-solver */
 	double opening_cost[NUM_OF_F];
@@ -60,12 +61,35 @@ public:
 	// À¯¹Î
 	void brute_force();
 
-	friend void calculate_func(bool *connection_table, FacilityLocation *fcl, int *min);
+	friend void calculate_func(bool *connection_table, FacilityLocation *fcl, double *min);
 
 	/* compare LP rounded solution and optimal solution */
 	// ¸íÀå
-	unsigned int objective(bool optimal = 0);
+	double objective(bool optimal = 0);
+	
+	double get_optimal_cost() {
+		return this->optimal_cost;
+	}
 
+	double get_rounded_cost() {
+		return this->rounded_cost;
+	}
+
+	double * get_connection_cost() {
+		return this->connection_cost;
+	}
+
+	double * get_opening_cost() {
+		return this->opening_cost;
+	}
+
+	bool * get_optimal_connection_table() {
+		return this->optimal_connection_table;
+	}
+
+	bool * get_optimal_opening_table() {
+		return this->optimal_opening_table;
+	}
 
 };
 
@@ -97,4 +121,5 @@ public:
 	int get_y() { return y; }
 	void set_x(int _x) { x = _x; }
 	void set_y(int _y) { y = _y; }
+
 };
