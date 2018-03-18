@@ -1,7 +1,9 @@
 #include "FacilityLocation.h"
-
+#define AREA 10000
 bool check_facility(Facility f_list[], Facility f, int n);
 bool check_client(Client c_list[], Client c, int n);
+
+
 
 double FacilityLocation::LP_solve(void)
 {
@@ -78,26 +80,48 @@ double FacilityLocation::LP_solve(void)
 	return solver.getObjValue();
 }
 
+
 void FacilityLocation::round(void)
 {
-	for (int i = 0; i < NUM_OF_F; i++)
+	/* Assumes 'opening_variable' and 'connection_variable' are already calculated by LP-solver.
+	   Return the rounded solution of above two variables each in 'opening_table', 'connection_table'.
+	   Return the rounded solution's objective cost in 'rounded_cost' */
+
+	int order_of_client[NUM_OF_C] = { 0 };
+
+	for (int i = 0; i < NUM_OF_C; i++) {
+		for (int j = 0; j < NUM_OF_C; j++) {
+			if (clock_of_client[j] == i)
+				order_of_client[i] = j;
+		}
+	}
+
+	for (int i = 0; i < NUM_OF_F; i++)  // M[i] <- 0
 		opening_table[i] = 0;
 
-	for (int j = 0; j < NUM_OF_C; j++) {
+	for (int j = 0; j < NUM_OF_C; j++)  // N[i, j] <- 0
+		for (int i = 0; i < NUM_OF_F; i++)
+			connection_table[i * NUM_OF_C + j] = 0;
+
+	for (int j = 0; j < NUM_OF_C; j++) {  // j for client, i for facility, j_ for j'
 		double min = 99999999;
-		int min_client = order_of_client[j];
+		int min_client = order_of_client[j];  // pick a client who has the most small  ==>  pick minimum clock element's index
 		int min_facility, min_facility_client;
 		for (int i = 0; i < NUM_OF_F; i++) {
-			if (connection_variable[min_client + i*NUM_OF_C] > 0 && exponential_clock[i] < min) {
+			double cv = connection_variable[min_client + i * NUM_OF_C];
+			bool debug = connection_variable[min_client + i * NUM_OF_C] > 0 && exponential_clock[i] < min;
+			if (connection_variable[min_client + i*NUM_OF_C] > 0 && exponential_clock[i] < min) {  // find a facility which is connected to the client and has the smallest clock.
 				min_facility = i;
-				min = exponential_clock[i];
+				min = exponential_clock[i];  // update minimum clock
 			}
 		}
 		min = 999999999;
 		for (int j_ = 0; j_ < NUM_OF_C; j_++) {
-			if (connection_variable[j_ + min_facility*NUM_OF_C] > 0 && order_of_client[j_] < min) {
+			double cv = connection_variable[j_ + min_facility * NUM_OF_C];
+			bool debug = connection_variable[j_ + min_facility * NUM_OF_C] > 0 && clock_of_client[j_] < min;
+			if (connection_variable[j_ + min_facility*NUM_OF_C] > 0 && clock_of_client[j_] < min) {
 				min_facility_client = j_;
-				min = order_of_client[j_];
+				min = clock_of_client[j_];
 			}
 		}
 
@@ -111,25 +135,23 @@ void FacilityLocation::round(void)
 				if (connection_table[min_facility_client + i * NUM_OF_C] == 1)
 					min_facility_client_facility = i;
 			}
-			connection_table[j + min_facility_client_facility * NUM_OF_C] = 1;
+			connection_table[min_client + min_facility_client_facility * NUM_OF_C] = 1;
 		}
 	}
 
 	/* Calculate Cost ( objective function ) */
-	bool tmp_opening_table[NUM_OF_F] = { 0 };
 	double total_opening_cost = 0, total_connection_cost = 0;
 
 	/* calculate total connection_cost */
 	for (int j = 0; j < NUM_OF_C; j++) {  // calculate total connection_cost
 		for (int i = 0; i < NUM_OF_F; i++) {
 			total_connection_cost += connection_table[i * NUM_OF_C + j] * connection_cost[i * NUM_OF_C + j];
-			tmp_opening_table[i] = connection_table[i * NUM_OF_C + j];
 		}
 	}
 
 	/* calculate total opening cost */
 	for (int i = 0; i < NUM_OF_F; i++) {
-		total_opening_cost += tmp_opening_table[i] * opening_cost[i];
+		total_opening_cost += opening_table[i] * opening_cost[i];
 	}
 
 	rounded_cost = total_opening_cost + total_connection_cost;
@@ -169,7 +191,6 @@ FacilityLocation::FacilityLocation(void)
 	// set some values:
 	for (int i = 0; i < NUM_OF_C; ++i) myvector.push_back(i); // 1 2 3 4 5 6 7 8 9
 
-														
 	std::random_shuffle(myvector.begin(), myvector.end());
 
 	// using myrandom:
@@ -177,14 +198,14 @@ FacilityLocation::FacilityLocation(void)
 
 	int i = 0;
 	for (std::vector<int>::iterator it = myvector.begin(); it != myvector.end(); ++it, ++i)
-		order_of_client[i] = *it;
+		clock_of_client[i] = *it;
 
 	/* create the facilities in the area*/
 	Facility facilities[NUM_OF_F];
 	for (int i = 0; i < NUM_OF_F; ) {
 		int x, y;
-		x = (int)rand() % 10000 + 1;
-		y = (int)rand() % 10000 + 1;
+		x = (int)rand() % AREA + 1;
+		y = (int)rand() % AREA + 1;
 		Facility f;
 		f.set_x(x);
 		f.set_y(y);
@@ -196,18 +217,20 @@ FacilityLocation::FacilityLocation(void)
 	}
 	
 	/*prinit facilities*/
+	/*
 	cout << "The coordinates of facilities" << endl;
 	for (int i = 0; i < NUM_OF_F; i++) {
 		cout << i << ": " << "(" << facilities[i].get_x() << "," << facilities[i].get_y() << ") ";
 	}
 	cout << endl;
+	*/
 	
 	/* create the clients in the area */
 	Client clients[NUM_OF_C];
 	for (int i = 0; i < NUM_OF_C; ) {
 		int x, y;
-		x = (int)rand() % 10000 + 1;
-		y = (int)rand() % 10000 + 1;
+		x = (int)rand() % AREA + 1;
+		y = (int)rand() % AREA + 1;
 		Client c;
 		c.set_x(x);
 		c.set_y(y);
@@ -219,10 +242,12 @@ FacilityLocation::FacilityLocation(void)
 	}
 
 	/*print clients*/
+	/*
 	cout << "The coordinates of clients" << endl;
 	for (int i = 0 ; i < NUM_OF_C; i++) {
 		cout << i << ": " << "(" << clients[i].get_x() << "," << clients[i].get_y() << ") ";
 	}
+	*/
 
 	/* settiing costs of connections of clients to facilities */
 	for (int i = 0, j = 0; i < NUM_OF_F;) {
@@ -240,12 +265,12 @@ FacilityLocation::FacilityLocation(void)
 	for (int i = 0; i < NUM_OF_F; i++) {
 		opening_cost[i] = (int)rand() % 100 + 1;
 	}
-
+	cout << "constructor is end" << endl;
 	// print out content:
 	/*
 	for (int i = 0; i < NUM_OF_C; i++) {
-
 	cout << "c" << i << ": " << order_of_client[i] << endl;
+
 	}
 	for (int i = 0; i < NUM_OF_F; i++) {
 	cout << "f" << i << ": " << exponential_clock[i] << endl;
@@ -309,6 +334,7 @@ void recursive_func(bool *connection_table, int index, FacilityLocation *fcl, do
 
 void FacilityLocation::brute_force(void)
 {
+	/* Runing Time O(F^C) */
 	/* check all possible solutions */
 	/* find the optimal solution : min(opening cost + connection cost) */
 	/* save the optimal solution to 'optimal_opening_table', 'optimal_connection_table' */
@@ -317,8 +343,8 @@ void FacilityLocation::brute_force(void)
 	double min = 999999999;
 
 	recursive_func(connection_table, 0, this, &min);
-	cout << "Optimal Solution: " << min << endl;
 }
+
 
 double FacilityLocation::objective(bool optimal)
 {

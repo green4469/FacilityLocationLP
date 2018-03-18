@@ -11,9 +11,9 @@
 #include <math.h>
 using namespace std;
 
+#define NUM_OF_F 100
+#define NUM_OF_C 100
 
-#define NUM_OF_F 10
-#define NUM_OF_C 5
 class FacilityLocation {
 private:
 	/* Rounded problem's objective function's cost */
@@ -34,7 +34,7 @@ private:
 	double exponential_clock[NUM_OF_F];
 
 	/* the order of the exponential clocks of the clients by ascending */
-	int order_of_client[NUM_OF_C];
+	int clock_of_client[NUM_OF_C];
 
 	/* output of Rounding Algorithm */
 	bool opening_table[NUM_OF_F];
@@ -91,6 +91,29 @@ public:
 		return this->optimal_opening_table;
 	}
 
+	double * get_opening_variable() {
+		return this->opening_variable;
+	}
+
+	double * get_connection_variable() {
+		return this->connection_variable;
+	}
+
+	bool * get_opening_table() {
+		return this->opening_table;
+	}
+
+	bool * get_connection_table() {
+		return this->connection_table;
+	}
+
+	double * get_exponential_clock() {
+		return this->exponential_clock;
+	}
+
+	int * get_clock_of_client() {
+		return this->clock_of_client;
+	}
 };
 
 class Facility {
@@ -122,4 +145,5 @@ public:
 	void set_x(int _x) { x = _x; }
 	void set_y(int _y) { y = _y; }
 
+	
 };
