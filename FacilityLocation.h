@@ -32,7 +32,7 @@ private:
 	double exponential_clock[NUM_OF_F];
 
 	/* the order of the exponential clocks of the clients by ascending */
-	int order_of_client[NUM_OF_C];
+	int clock_of_client[NUM_OF_C];
 
 	/* output of Rounding Algorithm */
 	bool opening_table[NUM_OF_F];
@@ -103,5 +103,13 @@ public:
 
 	bool * get_connection_table() {
 		return this->connection_table;
+	}
+
+	double * get_exponential_clock() {
+		return this->exponential_clock;
+	}
+
+	int * get_clock_of_client() {
+		return this->clock_of_client;
 	}
 };
