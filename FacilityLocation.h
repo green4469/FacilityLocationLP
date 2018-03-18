@@ -10,8 +10,8 @@
 #include <cstdlib>      // std::rand, std::srand
 using namespace std;
 
-#define NUM_OF_F 3
-#define NUM_OF_C 6
+#define NUM_OF_F 30
+#define NUM_OF_C 600
 class FacilityLocation {
 private:
 	/* Rounded problem's objective function's cost */

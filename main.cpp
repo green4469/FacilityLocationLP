@@ -12,8 +12,8 @@ int main() {
 	bool * opening_table;
 	bool * connection_table;
 
-	cout << "Facilitys' opening costs, connection costs" << endl;
-	print_contents(opening_cost, connection_cost);
+	//cout << "Facilitys' opening costs, connection costs" << endl;
+	//print_contents(opening_cost, connection_cost);
 
 
 	/* LP solver sovle the relaxed problem */
@@ -23,14 +23,14 @@ int main() {
 
 
 	/* Print LP_solver's output (Opening variables, Connection variables)*/
-	connection_variable = fl.get_connection_variable();
-	opening_variable = fl.get_opening_variable();
+	//connection_variable = fl.get_connection_variable();
+	//opening_variable = fl.get_opening_variable();
 
-	cout << "Facilitys' opening variables, connection variables" << endl;
-	print_contents(opening_variable, connection_variable);
+	//cout << "Facilitys' opening variables, connection variables" << endl;
+	//print_contents(opening_variable, connection_variable);
 	
 
-	/* Find optimal solution through brute-force */
+	/* Find optimal solution through brute-force 
 	fl.brute_force();
 	bool* optimal_connection_table = fl.get_optimal_connection_table();
 	bool* optimal_opening_table = fl.get_optimal_opening_table();
@@ -40,15 +40,16 @@ int main() {
 
 	cout << "The obj val of brute-force alg : " << fl.get_optimal_cost() << endl;
 	cout << endl;
+	*/
 
 	/* Find rounded solution */
 	fl.round();
 	cout << "The obj val of rounding alg : " << fl.get_rounded_cost() << endl;
 
-	cout << "Facilitys' rounded opening variables, rounded connection variables" << endl;
-	opening_table = fl.get_opening_table();
-	connection_table = fl.get_connection_table();
-	print_contents(opening_table, connection_table);
+	//cout << "Facilitys' rounded opening variables, rounded connection variables" << endl;
+	//opening_table = fl.get_opening_table();
+	//connection_table = fl.get_connection_table();
+	//print_contents(opening_table, connection_table);
 
 }
 

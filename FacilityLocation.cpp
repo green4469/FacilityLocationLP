@@ -242,6 +242,7 @@ FacilityLocation::FacilityLocation(void)
 
 	// print out content:
 	
+	/*
 	for (int i = 0; i < NUM_OF_C; i++) {
 	cout << "c" << i << ": " << clock_of_client[i] << endl;
 	}
@@ -249,6 +250,7 @@ FacilityLocation::FacilityLocation(void)
 	cout << "f" << i << ": " << exponential_clock[i] << endl;
 	}
 	cout << "---------cost---------------" << endl;
+	*/
 
 	/*
 	for (int i = 0; i < NUM_OF_F*NUM_OF_C; i++) {
