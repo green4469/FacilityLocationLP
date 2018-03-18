@@ -10,8 +10,8 @@
 #include <cstdlib>      // std::rand, std::srand
 using namespace std;
 
-#define NUM_OF_F 3
-#define NUM_OF_C 10
+#define NUM_OF_F 2
+#define NUM_OF_C 3
 class FacilityLocation {
 private:
 	/* Rounded problem's objective function's cost */
@@ -63,6 +63,29 @@ public:
 
 	/* compare LP rounded solution and optimal solution */
 	// Ένΐε
-	unsigned int objective(bool optimal=0);
+	unsigned int objective(bool optimal = 0);
 
+	int get_optimal_cost() {
+		return this->optimal_cost;
+	}
+
+	int get_rounded_cost() {
+		return this->rounded_cost;
+	}
+
+	unsigned int * get_connection_cost() {
+		return this->connection_cost;
+	}
+
+	unsigned int * get_opening_cost() {
+		return this->opening_cost;
+	}
+
+	bool * get_optimal_connection_table() {
+		return this->optimal_connection_table;
+	}
+
+	bool * get_optimal_opening_table() {
+		return this->optimal_opening_table;
+	}
 };
