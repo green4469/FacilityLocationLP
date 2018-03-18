@@ -1,5 +1,7 @@
 #include "FacilityLocation.h"
 
+bool check_facility(Facility f_list[], Facility f, int n);
+bool check_client(Client c_list[], Client c, int n);
 
 double FacilityLocation::LP_solve(void)
 {
@@ -115,7 +117,7 @@ void FacilityLocation::round(void)
 
 	/* Calculate Cost ( objective function ) */
 	bool tmp_opening_table[NUM_OF_F] = { 0 };
-	int total_opening_cost = 0, total_connection_cost = 0;
+	double total_opening_cost = 0, total_connection_cost = 0;
 
 		/* calculate total connection_cost */
 	for (int i = 0; i < NUM_OF_C; i++) {  // calculate total connection_cost
@@ -167,7 +169,7 @@ FacilityLocation::FacilityLocation(void)
 	// set some values:
 	for (int i = 0; i < NUM_OF_C; ++i) myvector.push_back(i); // 1 2 3 4 5 6 7 8 9
 
-															  // using built-in random generator:
+														
 	std::random_shuffle(myvector.begin(), myvector.end());
 
 	// using myrandom:
@@ -177,16 +179,52 @@ FacilityLocation::FacilityLocation(void)
 	for (std::vector<int>::iterator it = myvector.begin(); it != myvector.end(); ++it, ++i)
 		order_of_client[i] = *it;
 
+	/* create the facilities in the area*/
+	Facility facilities[NUM_OF_F];
+	for (int i = 0; i < NUM_OF_F; ) {
+		int x, y;
+		x = (int)rand() % 10000 + 1;
+		y = (int)rand() % 10000 + 1;
+		Facility f;
+		f.set_x(x);
+		f.set_y(y);
+		/* if there is not an fa*/
+		if (!check_facility(facilities, f, i)) {
+			facilities[i] = f;
+			i++;
+		}
+	}
+	
+	/* create the clients in the area */
+	Client clients[NUM_OF_C];
+	for (int i = 0; i < NUM_OF_C; ) {
+		int x, y;
+		x = (int)rand() % 10000 + 1;
+		y = (int)rand() % 10000 + 1;
+		Client c;
+		c.set_x(x);
+		c.set_y(y);
+		/* if there is not an fa*/
+		if (!check_client(clients, c, i)) {
+			clients[i] = c;
+			i++;
+		}
+	}
 
-	/* settiing costs of openings and connections */
+
+	/* settiing costs of connections of clients to facilities */
 	for (int i = 0, j = 0; i < NUM_OF_F;) {
-		connection_cost[i*NUM_OF_C + j] = (int)rand() % 100 + 1;
+		//connection_cost[i*NUM_OF_C + j] = (int)rand() % 100 + 1;
+		connection_cost[i*NUM_OF_C + j] = sqrt( (facilities[i].get_x() - clients[j].get_x())*(facilities[i].get_x() - clients[j].get_x())
+											   +(facilities[i].get_y() - clients[j].get_y())*(facilities[i].get_y() - clients[j].get_y()));
 		j++;
 		if (j == NUM_OF_C) {
 			i++;
 			j = 0;
 		}
 	}
+
+	/* settiing costs of openings of facilities */
 	for (int i = 0; i < NUM_OF_F; i++) {
 		opening_cost[i] = (int)rand() % 100 + 1;
 	}
@@ -273,20 +311,37 @@ unsigned int FacilityLocation::objective(bool optimal)
 	unsigned int sol = 0;
 	if (optimal) {
 		for (int i = 0; i < NUM_OF_F; ++i) {
-			sol += (unsigned int)this->optimal_opening_table[i] * this->opening_cost[i];
+			sol += (double)this->optimal_opening_table[i] * this->opening_cost[i];
 			for (int j = 0; j < NUM_OF_C; ++j) {
-				sol += (unsigned int)this->optimal_connection_table[i*NUM_OF_C + j] * this->connection_cost[i*NUM_OF_C + j];
+				sol += (double)this->optimal_connection_table[i*NUM_OF_C + j] * this->connection_cost[i*NUM_OF_C + j];
 			}
 		}
 	}
 	else {
 		for (int i = 0; i < NUM_OF_F; ++i) {
-			sol += (unsigned int)this->opening_table[i] * this->opening_cost[i];
+			sol += (double)this->opening_table[i] * this->opening_cost[i];
 			for (int j = 0; j < NUM_OF_C; ++j) {
-				sol += (unsigned int)this->connection_table[i*NUM_OF_C + j] * this->connection_cost[i*NUM_OF_C + j];
+				sol += (double)this->connection_table[i*NUM_OF_C + j] * this->connection_cost[i*NUM_OF_C + j];
 			}
 		}
 
 	}
 	return sol;
+}
+
+/* check if facility or clients is in the list*/
+bool check_facility(Facility f_list[], Facility f, int n) {
+	for (int i = 0; i < n; i++) {
+		if (f_list[i] == f)
+			return true;
+	}
+	return false;
+}
+
+bool check_client(Client c_list[], Client c, int n) {
+	for (int i = 0; i < n; i++) {
+		if (c_list[i] == c)
+			return true;
+	}
+	return false;
 }
