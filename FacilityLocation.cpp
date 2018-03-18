@@ -188,12 +188,19 @@ FacilityLocation::FacilityLocation(void)
 		Facility f;
 		f.set_x(x);
 		f.set_y(y);
-		/* if there is not an fa*/
+		/* if there is not an facility*/
 		if (!check_facility(facilities, f, i)) {
 			facilities[i] = f;
 			i++;
 		}
 	}
+	
+	/*prinit facilities*/
+	cout << "The coordinates of facilities" << endl;
+	for (int i = 0; i < NUM_OF_F; i++) {
+		cout << i << ": " << "(" << facilities[i].get_x() << "," << facilities[i].get_y() << ") ";
+	}
+	cout << endl;
 	
 	/* create the clients in the area */
 	Client clients[NUM_OF_C];
@@ -204,13 +211,18 @@ FacilityLocation::FacilityLocation(void)
 		Client c;
 		c.set_x(x);
 		c.set_y(y);
-		/* if there is not an fa*/
+		/* if there is not an client*/
 		if (!check_client(clients, c, i)) {
 			clients[i] = c;
 			i++;
 		}
 	}
 
+	/*print clients*/
+	cout << "The coordinates of clients" << endl;
+	for (int i = 0 ; i < NUM_OF_C; i++) {
+		cout << i << ": " << "(" << clients[i].get_x() << "," << clients[i].get_y() << ") ";
+	}
 
 	/* settiing costs of connections of clients to facilities */
 	for (int i = 0, j = 0; i < NUM_OF_F;) {
@@ -230,7 +242,7 @@ FacilityLocation::FacilityLocation(void)
 	}
 
 	// print out content:
-	
+	/*
 	for (int i = 0; i < NUM_OF_C; i++) {
 
 	cout << "c" << i << ": " << order_of_client[i] << endl;
@@ -248,7 +260,7 @@ FacilityLocation::FacilityLocation(void)
 	for (int i = 0; i < NUM_OF_F; i++) {
 	cout << "f" << i << ": " << opening_cost[i] << endl;
 	}
-	
+	*/
 }
 
 void calculate_func(bool *connection_table, FacilityLocation *fcl, double *min)
