@@ -14,6 +14,12 @@ using namespace std;
 #define NUM_OF_C 10
 class FacilityLocation {
 private:
+	/* Rounded problem's objective function's cost */
+	int rounded_cost;
+
+	/* Original problem's objective function's optimal cost */
+	int optimal_cost;
+
 	/* Input of LP-solver */
 	unsigned int opening_cost[NUM_OF_F];
 	unsigned int connection_cost[NUM_OF_C * NUM_OF_F];
@@ -24,7 +30,8 @@ private:
 
 	/* exponential clocks of facilities */
 	double exponential_clock[NUM_OF_F];
-	/* the order of the exponential clocks of the clients by ascending*/
+
+	/* the order of the exponential clocks of the clients by ascending */
 	int order_of_client[NUM_OF_C];
 
 	/* output of Rounding Algorithm */
@@ -36,13 +43,9 @@ private:
 	bool optimal_connection_table[NUM_OF_C * NUM_OF_F];
 
 public:
-	/* constructor, inside it initialize the oppening cost, connection cost */
+	/* constructor, inside it initialize the oppening cost, connection cost, clients' clocks, facilities' clocks */
 	// 학수
 	FacilityLocation();
-
-	/* randomly sample expnential clocks of facilities */
-	// 학수
-	void random_sample();
 
 	/* solve the LP-relaxed facility location problem */
 	// 명장
@@ -56,8 +59,10 @@ public:
 	// 유민
 	void brute_force();
 
+	friend void calculate_func(bool *connection_table, FacilityLocation *fcl, int *min);
+
 	/* compare LP rounded solution and optimal solution */
 	// 명장
-	unsigned int objective(bool optimal);
+	unsigned int objective(bool optimal=0);
 
 };
