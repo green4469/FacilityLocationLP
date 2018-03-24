@@ -8,39 +8,49 @@
 #include <vector>       // std::vector
 #include <ctime>        // std::time
 #include <cstdlib>      // std::rand, std::srand
+#include <math.h>
+#include <numeric>		// std::iota
 using namespace std;
 
 #define NUM_OF_F 30
-#define NUM_OF_C 600
+#define NUM_OF_C 60
 class FacilityLocation {
 private:
 	/* Rounded problem's objective function's cost */
-	int rounded_cost;
+	double rounded_cost;
 
 	/* Original problem's objective function's optimal cost */
-	int optimal_cost;
+	double optimal_cost;
 
 	/* Input of LP-solver */
-	unsigned int opening_cost[NUM_OF_F];
-	unsigned int connection_cost[NUM_OF_C * NUM_OF_F];
+	double opening_cost[NUM_OF_F];
+	double connection_cost[NUM_OF_F][NUM_OF_C];
 
 	/* output of LP-solver */
 	double opening_variable[NUM_OF_F];
-	double connection_variable[NUM_OF_C * NUM_OF_F];
+	double connection_variable[NUM_OF_F][NUM_OF_C];
 
 	/* exponential clocks of facilities */
-	double exponential_clock[NUM_OF_F];
+	double exponential_clock[NUM_OF_F][NUM_OF_C];
 
 	/* the order of the exponential clocks of the clients by ascending */
 	int clock_of_client[NUM_OF_C];
 
+	/* Preprocessing */
+	double copied_opening_cost[NUM_OF_F][NUM_OF_C];  // f'
+	double copied_connection_cost[NUM_OF_F][NUM_OF_C][NUM_OF_C];  // d'
+	double copied_opening_variable[NUM_OF_F][NUM_OF_C];  // y'
+	double copied_connection_variable[NUM_OF_F][NUM_OF_C][NUM_OF_C];  // x'
+	bool copied_opening_table[NUM_OF_F][NUM_OF_C];  // M
+	bool copied_connection_table[NUM_OF_F][NUM_OF_C][NUM_OF_C];  // M'
+
 	/* output of Rounding Algorithm */
 	bool opening_table[NUM_OF_F];
-	bool connection_table[NUM_OF_C * NUM_OF_F];
+	bool connection_table[NUM_OF_F][NUM_OF_C];
 
 	/* output of Brute-force Algorithm */
 	bool optimal_opening_table[NUM_OF_F];
-	bool optimal_connection_table[NUM_OF_C * NUM_OF_F];
+	bool optimal_connection_table[NUM_OF_F][NUM_OF_C];
 
 public:
 	/* constructor, inside it initialize the oppening cost, connection cost, clients' clocks, facilities' clocks */
@@ -59,29 +69,29 @@ public:
 	// À¯¹Î
 	void brute_force();
 
-	friend void calculate_func(bool *connection_table, FacilityLocation *fcl, int *min);
+	friend void calculate_func(bool *connection_table, FacilityLocation *fcl, double *min);
 
 	/* compare LP rounded solution and optimal solution */
 	// ¸íÀå
-	unsigned int objective(bool optimal = 0);
+	double objective(bool optimal = 0);
 
-	int get_optimal_cost() {
+	double get_optimal_cost() {
 		return this->optimal_cost;
 	}
 
-	int get_rounded_cost() {
+	double get_rounded_cost() {
 		return this->rounded_cost;
 	}
-
-	unsigned int * get_connection_cost() {
+	
+	double (* get_connection_cost())[NUM_OF_C] {
 		return this->connection_cost;
 	}
 
-	unsigned int * get_opening_cost() {
+	double * get_opening_cost() {
 		return this->opening_cost;
 	}
 
-	bool * get_optimal_connection_table() {
+	bool (* get_optimal_connection_table())[NUM_OF_C] {
 		return this->optimal_connection_table;
 	}
 
@@ -93,7 +103,7 @@ public:
 		return this->opening_variable;
 	}
 
-	double * get_connection_variable() {
+	double (* get_connection_variable())[NUM_OF_C] {
 		return this->connection_variable;
 	}
 
@@ -101,11 +111,11 @@ public:
 		return this->opening_table;
 	}
 
-	bool * get_connection_table() {
+	bool (* get_connection_table())[NUM_OF_C] {
 		return this->connection_table;
 	}
 
-	double * get_exponential_clock() {
+	double (* get_exponential_clock())[NUM_OF_C] {
 		return this->exponential_clock;
 	}
 
@@ -113,3 +123,5 @@ public:
 		return this->clock_of_client;
 	}
 };
+
+int CompareDoubleAbsolute(double x, double y, double absTolerance = (1.0e-8));

@@ -1,5 +1,12 @@
 #include "FacilityLocation.h"
 
+int CompareDoubleAbsolute(double x, double y, double absTolerance)
+{
+	double diff = x - y;
+	if (fabs(diff) <= absTolerance)
+		return 0;
+	return (diff > 0) ? 1 : -1;
+}
 
 double FacilityLocation::LP_solve(void)
 {
@@ -42,7 +49,7 @@ double FacilityLocation::LP_solve(void)
 	for (int i = 0; i < NUM_OF_F; ++i) {
 		obj.setLinearCoef(y[i], this->opening_cost[i]);
 		for (int j = 0; j < NUM_OF_C; ++j) {
-			obj.setLinearCoef(x[i*NUM_OF_C + j], this->connection_cost[i*NUM_OF_C + j]);
+			obj.setLinearCoef(x[i*NUM_OF_C + j], this->connection_cost[i][j]);
 		}
 	}
 
@@ -70,12 +77,25 @@ double FacilityLocation::LP_solve(void)
 	for (int i = 0; i < NUM_OF_F; ++i) {
 		this->opening_variable[i] = solver.getValue(y[i]);
 		for (int j = 0; j < NUM_OF_C; ++j) {
-			this->connection_variable[i*NUM_OF_C + j] = solver.getValue(x[i*NUM_OF_C + j]);
+			this->connection_variable[i][j] = solver.getValue(x[i*NUM_OF_C + j]);
 		}
 	}
 	return solver.getObjValue();
 }
 
+template <typename T>
+vector<size_t> sort_indexes(const vector<T> &v) {
+
+	// initialize original index locations
+	vector<size_t> idx(v.size());
+	iota(idx.begin(), idx.end(), 0);
+
+	// sort indexes based on comparing values in v
+	sort(idx.begin(), idx.end(),
+		[&v](size_t i1, size_t i2) {return v[i1] < v[i2]; });
+
+	return idx;
+}
 
 void FacilityLocation::round(void)
 {
@@ -83,56 +103,156 @@ void FacilityLocation::round(void)
 	   Return the rounded solution of above two variables each in 'opening_table', 'connection_table'.
 	   Return the rounded solution's objective cost in 'rounded_cost' */
 
+
+	/* Preprocessing */
+	// initialize costs (3 ~ 5)
+	for (int i = 0; i < NUM_OF_F; i++) {
+		for (int j = 0; j < NUM_OF_C; j++) {
+			copied_opening_cost[i][j] = opening_cost[i];  // The copied facilities are defined to have the same opening cost as the original.
+		}
+	}
+
+	for (int i = 0; i < NUM_OF_F; i++) {
+		for (int j = 0; j < NUM_OF_C; j++) {
+			for (int j_ = 0; j < NUM_OF_C; j++) {
+				copied_connection_cost[i][j][j_] = connection_cost[i][j_];  // The copied connections are defined to have the same connection cost as the original (ex, d(i, j) = d(i1, j) = d(i2, j) for all j in C)
+			}
+		}
+	}
+
+	/// assign values to y', x' (6 ~ 14)
+	for (int i = 0; i < NUM_OF_F; i++) {
+		// connection variable index sorting (6 ~ 8)
+		size_t *increasing_index;
+		vector<double> v;  // v contains the index j of clients who are partially connected to facility i.
+		
+		for (int j = 0; j < NUM_OF_C; j++) {
+			//if (CompareDoubleAbsolute(connection_variable[i][j], 0.0) <= 0)
+			//	continue;
+			v.push_back(connection_variable[i][j]);  // save connection variables to v
+		}
+		vector<size_t> vid = sort_indexes(v);  // sort the index by its connection variable value
+		
+		increasing_index = &vid[0];  // from vector to list.
+
+
+		// assign values to copied_opening_variable (9 ~ 11)
+		copied_opening_variable[i][0] = connection_variable[i][increasing_index[0]];
+		for (int j = 1; j < NUM_OF_C; j++) {
+			copied_opening_variable[i][j] = connection_variable[i][increasing_index[j]] - connection_variable[i][increasing_index[j - 1]];
+		}
+		// assign values to copied_connection-variable (12 ~ 14)
+		for (int i_ = 0; i_ < NUM_OF_F; i_++) {
+			for (int j = 0; j < i; j++) {
+				copied_connection_variable[i][i_][j] = 0.0;
+			}
+			for (int j = i; j < NUM_OF_C; j++) {
+				copied_connection_variable[i][i_][j] = copied_opening_variable[i][i_];
+			}
+		}
+	}
+	///
+
+	// initialize copied_opening_table all 0 (15)
+	for (int i = 0; i < NUM_OF_F; i++) {
+		for (int j = 0; j < NUM_OF_C; j++) {
+			copied_opening_table[i][j] = 0;
+		}
+	}
+	// initialize copied_connection_table all 0
+	for (int i = 0; i < NUM_OF_F; i++) {
+		for (int i_ = 0; i_ < NUM_OF_C; i_++) {
+			for (int j = 0; j < NUM_OF_C; j++) {
+				copied_connection_table[i][i_][j] = 0;
+			}
+		}
+	}
+
+	/* Rounding */
 	int order_of_client[NUM_OF_C] = { 0 };
 
 	for (int i = 0; i < NUM_OF_C; i++) {
 		for (int j = 0; j < NUM_OF_C; j++) {
 			if (clock_of_client[j] == i)
-				order_of_client[i] = j;
+				order_of_client[i] = j;  // index sorting (18 ~ 19)
 		}
 	}
 
-	for (int i = 0; i < NUM_OF_F; i++)  // M[i] <- 0
+	for (int i = 0; i < NUM_OF_F; i++)  // a set of opened facilities (final output)
 		opening_table[i] = 0;
 
-	for (int j = 0; j < NUM_OF_C; j++)  // N[i, j] <- 0
+	for (int j = 0; j < NUM_OF_C; j++)  // connections (final output)
 		for (int i = 0; i < NUM_OF_F; i++)
-			connection_table[i * NUM_OF_C + j] = 0;
+			connection_table[i][j] = 0;
 
+	// actual rounding algorithm (20 ~ 27)
 	for (int j = 0; j < NUM_OF_C; j++) {  // j for client, i for facility, j_ for j'
-		double min = 99999999;
+		double min = 99999999.999;
 		int min_client = order_of_client[j];  // pick a client who has the most small  ==>  pick minimum clock element's index
-		int min_facility, min_facility_client;
+		
+		// find minimum clock facility
+		int min_facility_r, min_facility_c, min_facility_client;
 		for (int i = 0; i < NUM_OF_F; i++) {
-			double cv = connection_variable[min_client + i * NUM_OF_C];
-			bool debug = connection_variable[min_client + i * NUM_OF_C] > 0 && exponential_clock[i] < min;
-			if (connection_variable[min_client + i*NUM_OF_C] > 0 && exponential_clock[i] < min) {  // find a facility which is connected to the client and has the smallest clock.
-				min_facility = i;
-				min = exponential_clock[i];  // update minimum clock
+			for (int i_ = 0; i_ < NUM_OF_C; i_++) {
+				if (CompareDoubleAbsolute(copied_connection_variable[i][i_][min_client], 0.0) == 1 && exponential_clock[i][i_] < min) {  // find a facility which is connected to the client and has the smallest clock.
+					min_facility_r = i;
+					min_facility_c = i_;
+					min = exponential_clock[i][i_];  // update minimum clock
+				}
 			}
 		}
-		min = 999999999;
+
+		// find minimum clock client 
+		min = 999999999.999;
 		for (int j_ = 0; j_ < NUM_OF_C; j_++) {
-			double cv = connection_variable[j_ + min_facility * NUM_OF_C];
-			bool debug = connection_variable[j_ + min_facility * NUM_OF_C] > 0 && clock_of_client[j_] < min;
-			if (connection_variable[j_ + min_facility*NUM_OF_C] > 0 && clock_of_client[j_] < min) {
+			if (CompareDoubleAbsolute(copied_connection_variable[min_facility_r][min_facility_c][j_], 0.0) == 1 && clock_of_client[j_] < min) {
 				min_facility_client = j_;
 				min = clock_of_client[j_];
 			}
 		}
 
 		if (min_client == min_facility_client) {  // if j == j'
-			opening_table[min_facility] = 1;  // open i
-			connection_table[min_client + min_facility*NUM_OF_C] = 1;  // connect j to i
+			copied_opening_table[min_facility_r][min_facility_c] = 1;  // open i
+			copied_connection_table[min_facility_r][min_facility_c][min_client] = 1;  // connect j to i
 		}
 		else {  // connect j to the same facility as j'
-			int min_facility_client_facility = 0;
+			int min_facility_client_facility_r = 0;
+			int min_facility_client_facility_c = 0;
 			for (int i = 0; i < NUM_OF_F; i++) {  // find the facility connected to j'(min_client_facility)
-				if (connection_table[min_facility_client + i * NUM_OF_C] == 1)
-					min_facility_client_facility = i;
+				for (int i_ = 0; i < NUM_OF_C; i_++) {
+					if (copied_connection_table[i][i_][min_facility_client] == 1) {
+						min_facility_client_facility_r = i;
+						min_facility_client_facility_c = i_;
+					}
+				}
 			}
-			connection_table[min_client + min_facility_client_facility * NUM_OF_C] = 1;
+			copied_connection_table[min_facility_client_facility_r][min_facility_client_facility_c][min_client] = 1;
 		}
+	}
+
+	// post processing (29 ~ 34)
+	for (int i = 0; i < NUM_OF_F; i++) {
+		int sum = 0;
+		for (int i_ = 0; i_ < NUM_OF_C; i_++) {
+			sum += copied_opening_table[i][i_];
+		}
+		if (sum > 0) opening_table[i] = 1;
+	}
+
+	for (int j = 0; j < NUM_OF_C; j++) {
+		int facility_r = 0;
+		int facility_c = 0;
+
+		for (int i = 0; i < NUM_OF_F; i++) {
+			for (int i_ = 0; i_ < NUM_OF_C; i_++) {
+				if (copied_connection_table[i][i_][j] == 1) {
+					facility_r = i;
+					facility_c = i_;
+				}
+			}
+		}
+
+		connection_table[j][facility_r] = 1;
 	}
 
 	/* Calculate Cost ( objective function ) */
@@ -141,7 +261,7 @@ void FacilityLocation::round(void)
 	/* calculate total connection_cost */
 	for (int j = 0; j < NUM_OF_C; j++) {  // calculate total connection_cost
 		for (int i = 0; i < NUM_OF_F; i++) {
-			total_connection_cost += connection_table[i * NUM_OF_C + j] * connection_cost[i * NUM_OF_C + j];
+			total_connection_cost += connection_table[i][j] * connection_cost[i][j];
 		}
 	}
 
@@ -193,11 +313,13 @@ FacilityLocation::FacilityLocation(void)
 
 	//각각의 facility의 exponential_clock 값 설정
 	for (int i = 0; i < NUM_OF_F; ++i) {
-		double y_i = ((double)rand() / (RAND_MAX));
-		std::exponential_distribution<double> distribution(y_i);
-		//double number = distribution(generator);
-		//exponential_clock[i] = y_i*exp(double(-1 * y_i*number));
-		exponential_clock[i] = distribution(generator);
+		for (int i_ = 0; i_ < NUM_OF_C; i_++) {
+			double y_i = ((double)rand() / (RAND_MAX));
+			std::exponential_distribution<double> distribution(y_i);
+			//double number = distribution(generator);
+			//exponential_clock[i] = y_i*exp(double(-1 * y_i*number));
+			exponential_clock[i][i_] = distribution(generator);
+		}
 	}
 
 
@@ -229,7 +351,7 @@ FacilityLocation::FacilityLocation(void)
 
 	/* settiing costs of openings and connections */
 	for (int i = 0, j = 0; i < NUM_OF_F;) {
-		connection_cost[i*NUM_OF_C + j] = (int)rand() % 100 + 1;
+		connection_cost[i][j] = (int)rand() % 100 + 1;
 		j++;
 		if (j == NUM_OF_C) {
 			i++;
@@ -263,15 +385,15 @@ FacilityLocation::FacilityLocation(void)
 	*/
 }
 
-void calculate_func(bool *connection_table, FacilityLocation *fcl, int *min)
+void calculate_func(bool *connection_table, FacilityLocation *fcl, double *min)
 {
 	bool opening_table[NUM_OF_F] = { 0 };
-	int total_opening_cost = 0, total_connection_cost = 0;
+	double total_opening_cost = 0.0, total_connection_cost = 0.0;
 
 	/* calculate total connection_cost */
 	for (int j = 0; j < NUM_OF_C; j++) {
 		for (int i = 0; i < NUM_OF_F; i++) {
-			total_connection_cost += connection_table[i * NUM_OF_C + j] * (fcl->connection_cost[i * NUM_OF_C + j]);
+			total_connection_cost += connection_table[i * NUM_OF_C + j] * (fcl->connection_cost[i][j]);
 			opening_table[i] += connection_table[i * NUM_OF_C + j];
 		}
 	}
@@ -288,14 +410,14 @@ void calculate_func(bool *connection_table, FacilityLocation *fcl, int *min)
 			fcl->optimal_opening_table[i] = opening_table[i];
 		for (int j = 0; j < NUM_OF_C; j++)
 			for (int i = 0; i < NUM_OF_F; i++)
-				fcl->optimal_connection_table[i * NUM_OF_C + j] = connection_table[i * NUM_OF_C + j];
+				fcl->optimal_connection_table[i][j] = connection_table[i * NUM_OF_C + j];
 
 		fcl->optimal_cost = total_opening_cost + total_connection_cost;
 
 	}
 }
 
-void recursive_func(bool *connection_table, int index, FacilityLocation *fcl, int *min)
+void recursive_func(bool *connection_table, int index, FacilityLocation *fcl, double *min)
 {
 	if (index >= NUM_OF_C)	return;  // base case
 	for (int i = 0; i < NUM_OF_F; i++) {
@@ -315,28 +437,28 @@ void FacilityLocation::brute_force(void)
 	/* save the optimal solution to 'optimal_opening_table', 'optimal_connection_table' */
 
 	bool connection_table[NUM_OF_C * NUM_OF_F] = { 0 };
-	int min = 999999999;
+	double min = 999999999;
 
 	recursive_func(connection_table, 0, this, &min);
 }
 
-unsigned int FacilityLocation::objective(bool optimal)
+double FacilityLocation::objective(bool optimal)
 {
 
-	unsigned int sol = 0;
+	double sol = 0;
 	if (optimal) {
 		for (int i = 0; i < NUM_OF_F; ++i) {
-			sol += (unsigned int)this->optimal_opening_table[i] * this->opening_cost[i];
+			sol += (double)this->optimal_opening_table[i] * this->opening_cost[i];
 			for (int j = 0; j < NUM_OF_C; ++j) {
-				sol += (unsigned int)this->optimal_connection_table[i*NUM_OF_C + j] * this->connection_cost[i*NUM_OF_C + j];
+				sol += (double)this->optimal_connection_table[i][j] * this->connection_cost[i][j];
 			}
 		}
 	}
 	else {
 		for (int i = 0; i < NUM_OF_F; ++i) {
-			sol += (unsigned int)this->opening_table[i] * this->opening_cost[i];
+			sol += (double)this->opening_table[i] * this->opening_cost[i];
 			for (int j = 0; j < NUM_OF_C; ++j) {
-				sol += (unsigned int)this->connection_table[i*NUM_OF_C + j] * this->connection_cost[i*NUM_OF_C + j];
+				sol += (double)this->connection_table[i][j] * this->connection_cost[i][j];
 			}
 		}
 
