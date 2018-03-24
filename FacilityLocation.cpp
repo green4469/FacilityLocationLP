@@ -19,13 +19,16 @@ double FacilityLocation::LP_solve(void)
 		y[i] = IloNumVar(env, 0, IloInfinity);
 
 	/* set ranges of sums of connection variables (1 <= sum_i(x_ij) <= 1 for all j) */
-	IloRange sum_range[NUM_OF_C];
+	IloExpr sum_expr[NUM_OF_C];
+	IloRange sum_condition[NUM_OF_C];
 	for (int j = 0; j < NUM_OF_C; ++j) {
-		sum_range[j] = IloRange(env, 1, 1);
+		sum_expr[j] = IloExpr(env);
 		for (int i = 0; i < NUM_OF_F; ++i) {
-			sum_range[j].setLinearCoef(x[i*NUM_OF_C + j], 1);
+			sum_expr[j] += x[i*NUM_OF_C + j];
 		}
+		sum_condition[j] = (sum_expr[j] == 1.0);
 	}
+
 
 	/* set ranges of connection variables and opening variables (-inf <= x_ij - y_i <= 0 for all i, j) */
 	IloRange x_range[NUM_OF_C * NUM_OF_F];
@@ -49,7 +52,8 @@ double FacilityLocation::LP_solve(void)
 	/* compile the model */
 	IloModel model(env);
 	for (int j = 0; j < NUM_OF_C; ++j) {
-		model.add(sum_range[j]);
+		//model.add(sum_range[j]);
+		model.add(sum_condition[j]);
 		for (int i = 0; i < NUM_OF_F; ++i) {
 			model.add(x_range[i*NUM_OF_C + j]);
 		}
