@@ -13,7 +13,7 @@
 using namespace std;
 
 #define NUM_OF_F 10
-#define NUM_OF_C 200
+#define NUM_OF_C 20
 class FacilityLocation {
 private:
 	/* Rounded problem's objective function's cost */
@@ -72,7 +72,7 @@ public:
 	friend void calculate_func(bool *connection_table, FacilityLocation *fcl, double *min);
 
 	/* compare LP rounded solution and optimal solution */
-	// ¸íÀå
+	// ï¿½ï¿½ï¿½ï¿½
 	double objective(bool optimal = 0);
 
 	double get_optimal_cost() {

@@ -141,7 +141,7 @@ void FacilityLocation::round(void)
 	}
 
 
-	// opening variable, connection variable (y', x') �ʱ�ȭ
+	// opening variable, connection variable (y', x') �ʱ�ȭ
 	for (int i = 0; i < NUM_OF_F; i++) {
 		for (int j = 0; j < NUM_OF_C; j++) {
 			copied_opening_variable[i][j] = 0.0; 
