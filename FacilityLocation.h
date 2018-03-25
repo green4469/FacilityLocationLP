@@ -12,8 +12,8 @@
 #include <numeric>		// std::iota
 using namespace std;
 
-#define NUM_OF_F 20
-#define NUM_OF_C 200
+#define NUM_OF_F 100
+#define NUM_OF_C 1000
 class FacilityLocation {
 private:
 	/* Rounded problem's objective function's cost */

@@ -28,7 +28,8 @@ double FacilityLocation::LP_solve(void)
 	IloEnv env;
 
 	/* set and initialize connection variables */
-	IloNumVar x[NUM_OF_C * NUM_OF_F];
+	IloNumVar * x = new IloNumVar[NUM_OF_F * NUM_OF_C];
+	//IloNumVar x[NUM_OF_C * NUM_OF_F];
 	for (int i = 0; i < NUM_OF_F; ++i) {
 		for (int j = 0; j < NUM_OF_C; ++j) {
 			x[i*NUM_OF_C + j] = IloNumVar(env, 0, IloInfinity);
@@ -36,13 +37,16 @@ double FacilityLocation::LP_solve(void)
 	}
 
 	/* set and initialize opening variables */
-	IloNumVar y[NUM_OF_F];
+	IloNumVar *y = new IloNumVar[NUM_OF_F];
+	//IloNumVar y[NUM_OF_F];
 	for (int i = 0; i < NUM_OF_F; ++i)
 		y[i] = IloNumVar(env, 0, IloInfinity);
 
 	/* set ranges of sums of connection variables (1 <= sum_i(x_ij) <= 1 for all j) */
-	IloExpr sum_expr[NUM_OF_C];
-	IloRange sum_condition[NUM_OF_C];
+	IloExpr * sum_expr = new IloExpr[NUM_OF_C];
+	IloRange * sum_condition = new IloRange[NUM_OF_C];
+	//IloExpr sum_expr[NUM_OF_C];
+	//IloRange sum_condition[NUM_OF_C];
 	for (int j = 0; j < NUM_OF_C; ++j) {
 		sum_expr[j] = IloExpr(env);
 		for (int i = 0; i < NUM_OF_F; ++i) {
@@ -53,7 +57,8 @@ double FacilityLocation::LP_solve(void)
 
 
 	/* set ranges of connection variables and opening variables (-inf <= x_ij - y_i <= 0 for all i, j) */
-	IloRange x_range[NUM_OF_C * NUM_OF_F];
+	IloRange * x_range = new IloRange[NUM_OF_C * NUM_OF_F];
+	//IloRange x_range[NUM_OF_C * NUM_OF_F];
 	for (int i = 0; i < NUM_OF_F; ++i) {
 		for (int j = 0; j < NUM_OF_C; ++j) {
 			x_range[i * NUM_OF_C + j] = IloRange(env, -IloInfinity, 0);
@@ -224,7 +229,8 @@ void FacilityLocation::round(void)
 	}
 
 	/* Rounding */
-	int order_of_client[NUM_OF_C] = { 0 };
+	int* order_of_client = new int[NUM_OF_C];
+	//int order_of_client[NUM_OF_C] = { 0 };
 
 	for (int i = 0; i < NUM_OF_C; i++) {
 		for (int j = 0; j < NUM_OF_C; j++) {
