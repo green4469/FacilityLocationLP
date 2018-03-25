@@ -1,12 +1,4 @@
-#include "FacilityLocation.h"
-
-int CompareDoubleAbsolute(double x, double y, double absTolerance)
-{
-	double diff = x - y;
-	if (fabs(diff) <= absTolerance)
-		return 0;
-	return (diff > 0) ? 1 : -1;
-}
+ï»¿#include "FacilityLocation.h"
 
 int CompareDoubleUlps(double x, double y, int ulpsTolerance = 4)
 {
@@ -124,8 +116,8 @@ vector<size_t> sort_indexes(const vector<T> &v) {
 void FacilityLocation::round(void)
 {
 	/* Assumes 'opening_variable' and 'connection_variable' are already calculated by LP-solver.
-	   Return the rounded solution of above two variables each in 'opening_table', 'connection_table'.
-	   Return the rounded solution's objective cost in 'rounded_cost' */
+	Return the rounded solution of above two variables each in 'opening_table', 'connection_table'.
+	Return the rounded solution's objective cost in 'rounded_cost' */
 
 
 	/* Preprocessing */
@@ -320,7 +312,7 @@ FacilityLocation::FacilityLocation(void)
 {
 	/*
 	clock_of_client[0] = 2;
-	clock_of_client[1] = 0;	
+	clock_of_client[1] = 0;
 	clock_of_client[2] = 1;
 
 	exponential_clock[0] = 2.46;
@@ -348,12 +340,12 @@ FacilityLocation::FacilityLocation(void)
 	*/
 
 	/* generation of the expoential clocks of the facilities */
-	//double y_i; // facility°¡ ¿­·ÁÀÖÀ¸¸é 1, ´ÝÇôÀÖÀ¸¸é 0, fraction variable
+	//double y_i; // facilityï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 1, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 0, fraction variable
 	std::default_random_engine generator;
 
 	std::srand(unsigned(std::time(0)));
 
-	//°¢°¢ÀÇ facilityÀÇ exponential_clock °ª ¼³Á¤
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ facilityï¿½ï¿½ exponential_clock ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	for (int i = 0; i < NUM_OF_F; ++i) {
 		for (int i_ = 0; i_ < NUM_OF_C; i_++) {
 			double y_i = ((double)rand() / (RAND_MAX));
@@ -405,7 +397,7 @@ FacilityLocation::FacilityLocation(void)
 	}
 
 	// print out content:
-	
+
 	/*
 	for (int i = 0; i < NUM_OF_C; i++) {
 	cout << "c" << i << ": " << clock_of_client[i] << endl;

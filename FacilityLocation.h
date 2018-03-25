@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <iostream>
 #include <cstdlib>
 #include <ilcplex/ilocplex.h>
@@ -54,19 +54,19 @@ private:
 
 public:
 	/* constructor, inside it initialize the oppening cost, connection cost, clients' clocks, facilities' clocks */
-	// ÇÐ¼ö
+	// ï¿½Ð¼ï¿½
 	FacilityLocation();
 
 	/* solve the LP-relaxed facility location problem */
-	// ¸íÀå
+	// ï¿½ï¿½ï¿½ï¿½
 	double LP_solve();
 
 	/* round the LP-relaxed solution to the original problem's solution */
-	// À¯¹Î
+	// ï¿½ï¿½ï¿½ï¿½
 	void round();
 
 	/* check all possible solutions and pick the minimum cost (brute-force) */
-	// À¯¹Î
+	// ï¿½ï¿½ï¿½ï¿½
 	void brute_force();
 
 	friend void calculate_func(bool *connection_table, FacilityLocation *fcl, double *min);

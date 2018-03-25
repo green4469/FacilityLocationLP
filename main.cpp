@@ -22,6 +22,18 @@ int main(int argc, char **argv) {
 template <typename T>
 void print_contents(T a, T b)
 {
+<<<<<<< HEAD
+	FacilityLocation ex;
+	ex.LP_solve();
+	ex.random_sample();
+	ex.round();
+	ex.brute_force();
+	ex.objective();
+
+	system("pause");
+	return 0;
+}
+=======
 	for (int i = 0; i < NUM_OF_F; ++i) {
 		cout << "y[" << i << "]: " << a[i] << endl;
 	}
@@ -35,3 +47,4 @@ void print_contents(T a, T b)
 	}
 	cout << endl;
 }
+>>>>>>> 142389070ccb5d1378f0ef4b6b07d2080f3f40e4
