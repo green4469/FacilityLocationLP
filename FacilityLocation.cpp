@@ -8,6 +8,29 @@ int CompareDoubleAbsolute(double x, double y, double absTolerance)
 	return (diff > 0) ? 1 : -1;
 }
 
+int CompareDoubleUlps(double x, double y, int ulpsTolerance = 4)
+{
+	double diff = x - y;
+
+	__int64 nx = *((__int64*)&x);
+	__int64 ny = *((__int64*)&y);
+
+	if ((nx & 0x8000000000000000) != (ny & 0x8000000000000000))
+	{
+		if (x == y)
+			return 0;
+
+		return (diff > 0) ? 1 : -1;
+	}
+
+	__int64 ulpsDiff = nx - ny;
+	if ((ulpsDiff >= 0 ? ulpsDiff : -ulpsDiff) <= ulpsTolerance)
+		return 0;
+
+	return (diff > 0) ? 1 : -1;
+}
+
+
 double FacilityLocation::LP_solve(void)
 {
 	IloEnv env;
@@ -80,6 +103,7 @@ double FacilityLocation::LP_solve(void)
 			this->connection_variable[i][j] = solver.getValue(x[i*NUM_OF_C + j]);
 		}
 	}
+
 	return solver.getObjValue();
 }
 
@@ -113,9 +137,25 @@ void FacilityLocation::round(void)
 	}
 
 	for (int i = 0; i < NUM_OF_F; i++) {
+		for (int i_ = 0; i_ < NUM_OF_C; i_++) {
+			for (int j = 0; j < NUM_OF_C; j++) {
+				copied_connection_cost[i][i_][j] = connection_cost[i][j];  // The copied connections are defined to have the same connection cost as the original (ex, d(i, j) = d(i1, j) = d(i2, j) for all j in C)
+			}
+		}
+	}
+
+
+	// opening variable, connection variable (y', x') ÃÊ±âÈ­
+	for (int i = 0; i < NUM_OF_F; i++) {
 		for (int j = 0; j < NUM_OF_C; j++) {
-			for (int j_ = 0; j < NUM_OF_C; j++) {
-				copied_connection_cost[i][j][j_] = connection_cost[i][j_];  // The copied connections are defined to have the same connection cost as the original (ex, d(i, j) = d(i1, j) = d(i2, j) for all j in C)
+			copied_opening_variable[i][j] = 0.0; 
+		}
+	}
+
+	for (int i = 0; i < NUM_OF_F; i++) {
+		for (int i_ = 0; i_ < NUM_OF_C; i_++) {
+			for (int j = 0; j < NUM_OF_C; j++) {
+				copied_connection_variable[i][i_][j] = 0.0;
 			}
 		}
 	}
@@ -142,14 +182,15 @@ void FacilityLocation::round(void)
 			copied_opening_variable[i][j] = connection_variable[i][increasing_index[j]] - connection_variable[i][increasing_index[j - 1]];
 		}
 		// assign values to copied_connection-variable (12 ~ 14)
-		for (int i_ = 0; i_ < NUM_OF_F; i_++) {
-			for (int j = 0; j < i; j++) {
-				copied_connection_variable[i][i_][j] = 0.0;
+		for (int i_ = 0; i_ < NUM_OF_C; i_++) {
+			for (int j = 0; j < i_; j++) {
+				copied_connection_variable[i][i_][increasing_index[j]] = 0.0;
 			}
-			for (int j = i; j < NUM_OF_C; j++) {
-				copied_connection_variable[i][i_][j] = copied_opening_variable[i][i_];
+			for (int j = i_; j < NUM_OF_C; j++) {
+				copied_connection_variable[i][i_][increasing_index[j]] = copied_opening_variable[i][i_];
 			}
 		}
+
 	}
 	///
 
@@ -194,7 +235,7 @@ void FacilityLocation::round(void)
 		int min_facility_r, min_facility_c, min_facility_client;
 		for (int i = 0; i < NUM_OF_F; i++) {
 			for (int i_ = 0; i_ < NUM_OF_C; i_++) {
-				if (CompareDoubleAbsolute(copied_connection_variable[i][i_][min_client], 0.0) == 1 && exponential_clock[i][i_] < min) {  // find a facility which is connected to the client and has the smallest clock.
+				if (CompareDoubleUlps(copied_connection_variable[i][i_][min_client], 0.0) == 1 && exponential_clock[i][i_] < min) {  // find a facility which is connected to the client and has the smallest clock.
 					min_facility_r = i;
 					min_facility_c = i_;
 					min = exponential_clock[i][i_];  // update minimum clock
@@ -205,7 +246,7 @@ void FacilityLocation::round(void)
 		// find minimum clock client 
 		min = 999999999.999;
 		for (int j_ = 0; j_ < NUM_OF_C; j_++) {
-			if (CompareDoubleAbsolute(copied_connection_variable[min_facility_r][min_facility_c][j_], 0.0) == 1 && clock_of_client[j_] < min) {
+			if (CompareDoubleUlps(copied_connection_variable[min_facility_r][min_facility_c][j_], 0.0) == 1 && clock_of_client[j_] < min) {
 				min_facility_client = j_;
 				min = clock_of_client[j_];
 			}
@@ -219,7 +260,7 @@ void FacilityLocation::round(void)
 			int min_facility_client_facility_r = 0;
 			int min_facility_client_facility_c = 0;
 			for (int i = 0; i < NUM_OF_F; i++) {  // find the facility connected to j'(min_client_facility)
-				for (int i_ = 0; i < NUM_OF_C; i_++) {
+				for (int i_ = 0; i_ < NUM_OF_C; i_++) {
 					if (copied_connection_table[i][i_][min_facility_client] == 1) {
 						min_facility_client_facility_r = i;
 						min_facility_client_facility_c = i_;
@@ -252,8 +293,9 @@ void FacilityLocation::round(void)
 			}
 		}
 
-		connection_table[j][facility_r] = 1;
+		connection_table[facility_r][j] = 1;
 	}
+	/////////
 
 	/* Calculate Cost ( objective function ) */
 	int total_opening_cost = 0, total_connection_cost = 0;
