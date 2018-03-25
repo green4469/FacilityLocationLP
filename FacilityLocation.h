@@ -12,8 +12,8 @@
 #include <numeric>		// std::iota
 using namespace std;
 
-#define NUM_OF_F 10
-#define NUM_OF_C 20
+#define NUM_OF_F 20
+#define NUM_OF_C 200
 class FacilityLocation {
 private:
 	/* Rounded problem's objective function's cost */
@@ -22,35 +22,68 @@ private:
 	/* Original problem's objective function's optimal cost */
 	double optimal_cost;
 
+	
 	/* Input of LP-solver */
-	double opening_cost[NUM_OF_F];
-	double connection_cost[NUM_OF_F][NUM_OF_C];
+	//double opening_cost[NUM_OF_F];
+	//double connection_cost[NUM_OF_F][NUM_OF_C];
 
 	/* output of LP-solver */
-	double opening_variable[NUM_OF_F];
-	double connection_variable[NUM_OF_F][NUM_OF_C];
+	//double opening_variable[NUM_OF_F];
+	//double connection_variable[NUM_OF_F][NUM_OF_C];
 
 	/* exponential clocks of facilities */
-	double exponential_clock[NUM_OF_F][NUM_OF_C];
+	//double exponential_clock[NUM_OF_F][NUM_OF_C];
 
 	/* the order of the exponential clocks of the clients by ascending */
-	int clock_of_client[NUM_OF_C];
+	//int clock_of_client[NUM_OF_C];
 
 	/* Preprocessing */
-	double copied_opening_cost[NUM_OF_F][NUM_OF_C];  // f'
-	double copied_connection_cost[NUM_OF_F][NUM_OF_C][NUM_OF_C];  // d'
-	double copied_opening_variable[NUM_OF_F][NUM_OF_C];  // y'
-	double copied_connection_variable[NUM_OF_F][NUM_OF_C][NUM_OF_C];  // x'
-	bool copied_opening_table[NUM_OF_F][NUM_OF_C];  // M
-	bool copied_connection_table[NUM_OF_F][NUM_OF_C][NUM_OF_C];  // M'
+	//double copied_opening_cost[NUM_OF_F][NUM_OF_C];  // f'
+	//double copied_connection_cost[NUM_OF_F][NUM_OF_C][NUM_OF_C];  // d'
+	//double copied_opening_variable[NUM_OF_F][NUM_OF_C];  // y'
+	//double copied_connection_variable[NUM_OF_F][NUM_OF_C][NUM_OF_C];  // x'
+	//bool copied_opening_table[NUM_OF_F][NUM_OF_C];  // M
+	//bool copied_connection_table[NUM_OF_F][NUM_OF_C][NUM_OF_C];  // M'
 
 	/* output of Rounding Algorithm */
-	bool opening_table[NUM_OF_F];
-	bool connection_table[NUM_OF_F][NUM_OF_C];
+	//bool opening_table[NUM_OF_F];
+	//bool connection_table[NUM_OF_F][NUM_OF_C];
 
 	/* output of Brute-force Algorithm */
-	bool optimal_opening_table[NUM_OF_F];
-	bool optimal_connection_table[NUM_OF_F][NUM_OF_C];
+	//bool optimal_opening_table[NUM_OF_F];
+	//bool optimal_connection_table[NUM_OF_F][NUM_OF_C];
+
+	/* ---------------dynamic allocation version--------------------- */
+	/* Input of LP-solver */
+	double *opening_cost; // [NUM_OF_F] check
+	double **connection_cost; //[NUM_OF_F][NUM_OF_C]; check
+
+	/* output of LP-solver */
+	double* opening_variable; //[NUM_OF_F]; check
+	double** connection_variable; // [NUM_OF_F][NUM_OF_C]; check
+
+	/* exponential clocks of facilities */
+	double** exponential_clock; // [NUM_OF_F][NUM_OF_C];  check
+
+	/* the order of the exponential clocks of the clients by ascending */
+	int* clock_of_client; // [NUM_OF_C];   check
+
+	/* Preprocessing */
+	double** copied_opening_cost; // [NUM_OF_F][NUM_OF_C];  // f' check
+	double*** copied_connection_cost; // [NUM_OF_F][NUM_OF_C][NUM_OF_C];  // d' check
+	double** copied_opening_variable; // [NUM_OF_F][NUM_OF_C];  // y' check
+	double*** copied_connection_variable; // [NUM_OF_F][NUM_OF_C][NUM_OF_C];  // x' check
+	bool** copied_opening_table; // [NUM_OF_F][NUM_OF_C];  // M check
+	bool*** copied_connection_table; // [NUM_OF_F][NUM_OF_C][NUM_OF_C];  // M' check
+
+																 /* output of Rounding Algorithm */
+	bool* opening_table; // [NUM_OF_F]; // check
+	bool** connection_table; // [NUM_OF_F][NUM_OF_C]; check
+
+	/* output of Brute-force Algorithm */
+	bool* optimal_opening_table; // [NUM_OF_F]; check
+	bool** optimal_connection_table; // [NUM_OF_F][NUM_OF_C]; check
+
 
 public:
 	/* constructor, inside it initialize the oppening cost, connection cost, clients' clocks, facilities' clocks */
@@ -83,7 +116,7 @@ public:
 		return this->rounded_cost;
 	}
 	
-	double (* get_connection_cost())[NUM_OF_C] {
+	double ** get_connection_cost(){
 		return this->connection_cost;
 	}
 
@@ -91,7 +124,7 @@ public:
 		return this->opening_cost;
 	}
 
-	bool (* get_optimal_connection_table())[NUM_OF_C] {
+	bool ** get_optimal_connection_table(){
 		return this->optimal_connection_table;
 	}
 
@@ -103,7 +136,7 @@ public:
 		return this->opening_variable;
 	}
 
-	double (* get_connection_variable())[NUM_OF_C] {
+	double ** get_connection_variable(){
 		return this->connection_variable;
 	}
 
@@ -111,11 +144,11 @@ public:
 		return this->opening_table;
 	}
 
-	bool (* get_connection_table())[NUM_OF_C] {
+	bool ** get_connection_table(){
 		return this->connection_table;
 	}
 
-	double (* get_exponential_clock())[NUM_OF_C] {
+	double ** get_exponential_clock() {
 		return this->exponential_clock;
 	}
 

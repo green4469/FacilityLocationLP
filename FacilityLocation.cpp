@@ -93,7 +93,10 @@ double FacilityLocation::LP_solve(void)
 	cout << solver.getObjValue() << endl;
 	cout << solver.getValue(x[0]) << endl;
 	/* save results*/
+	opening_variable = new double[NUM_OF_F]; // dynamic allocation
+	connection_variable = new double*[NUM_OF_F]; 
 	for (int i = 0; i < NUM_OF_F; ++i) {
+		connection_variable[i] = new double[NUM_OF_C]; // dynamic allocation
 		this->opening_variable[i] = solver.getValue(y[i]);
 		for (int j = 0; j < NUM_OF_C; ++j) {
 			this->connection_variable[i][j] = solver.getValue(x[i*NUM_OF_C + j]);
@@ -126,14 +129,19 @@ void FacilityLocation::round(void)
 
 	/* Preprocessing */
 	// initialize costs (3 ~ 5)
+	copied_opening_cost = new double*[NUM_OF_F];
 	for (int i = 0; i < NUM_OF_F; i++) {
+		copied_opening_cost[i] = new double[NUM_OF_C];
 		for (int j = 0; j < NUM_OF_C; j++) {
 			copied_opening_cost[i][j] = opening_cost[i];  // The copied facilities are defined to have the same opening cost as the original.
 		}
 	}
 
+	copied_connection_cost = new double**[NUM_OF_F]; // dynamic allocation
 	for (int i = 0; i < NUM_OF_F; i++) {
+		copied_connection_cost[i] = new double*[NUM_OF_C]; // dynamic allocation
 		for (int i_ = 0; i_ < NUM_OF_C; i_++) {
+			copied_connection_cost[i][i_] = new double[NUM_OF_C]; // dynamic allocation
 			for (int j = 0; j < NUM_OF_C; j++) {
 				copied_connection_cost[i][i_][j] = connection_cost[i][j];  // The copied connections are defined to have the same connection cost as the original (ex, d(i, j) = d(i1, j) = d(i2, j) for all j in C)
 			}
@@ -142,14 +150,19 @@ void FacilityLocation::round(void)
 
 
 	// opening variable, connection variable (y', x') �ʱ�ȭ
+	copied_opening_variable = new double*[NUM_OF_F]; // dynamic allocation
 	for (int i = 0; i < NUM_OF_F; i++) {
+		copied_opening_variable[i] = new double[NUM_OF_C]; // dynamic allocation
 		for (int j = 0; j < NUM_OF_C; j++) {
 			copied_opening_variable[i][j] = 0.0; 
 		}
 	}
 
+	copied_connection_variable = new double**[NUM_OF_F]; // dynamic allocation
 	for (int i = 0; i < NUM_OF_F; i++) {
+		copied_connection_variable[i] = new double*[NUM_OF_C]; // dynamic allocation
 		for (int i_ = 0; i_ < NUM_OF_C; i_++) {
+			copied_connection_variable[i][i_] = new double[NUM_OF_C]; // dynamic allocation
 			for (int j = 0; j < NUM_OF_C; j++) {
 				copied_connection_variable[i][i_][j] = 0.0;
 			}
@@ -191,14 +204,19 @@ void FacilityLocation::round(void)
 	///
 
 	// initialize copied_opening_table all 0 (15)
+	copied_opening_table = new bool*[NUM_OF_F]; // dynamic allocation
 	for (int i = 0; i < NUM_OF_F; i++) {
+		copied_opening_table[i] = new bool[NUM_OF_C]; // dynamic allocation
 		for (int j = 0; j < NUM_OF_C; j++) {
 			copied_opening_table[i][j] = 0;
 		}
 	}
 	// initialize copied_connection_table all 0
+	copied_connection_table = new bool**[NUM_OF_F]; // dynamic allocation
 	for (int i = 0; i < NUM_OF_F; i++) {
+		copied_connection_table[i] = new bool*[NUM_OF_C]; // dynamic allocation
 		for (int i_ = 0; i_ < NUM_OF_C; i_++) {
+			copied_connection_table[i][i_] = new bool[NUM_OF_C]; // dynamic allocation
 			for (int j = 0; j < NUM_OF_C; j++) {
 				copied_connection_table[i][i_][j] = 0;
 			}
@@ -215,12 +233,16 @@ void FacilityLocation::round(void)
 		}
 	}
 
+	opening_table = new bool[NUM_OF_F]; // dynamic allocation
 	for (int i = 0; i < NUM_OF_F; i++)  // a set of opened facilities (final output)
 		opening_table[i] = 0;
 
-	for (int j = 0; j < NUM_OF_C; j++)  // connections (final output)
-		for (int i = 0; i < NUM_OF_F; i++)
+	connection_table = new bool*[NUM_OF_F]; // dynamic allocation
+	for (int i = 0; i < NUM_OF_F; i++) {  // connections (final output)
+		connection_table[i] = new bool[NUM_OF_C]; // dynamic allocation
+		for (int j = 0; j < NUM_OF_C; j++)
 			connection_table[i][j] = 0;
+	}
 
 	// actual rounding algorithm (20 ~ 27)
 	for (int j = 0; j < NUM_OF_C; j++) {  // j for client, i for facility, j_ for j'
@@ -350,7 +372,10 @@ FacilityLocation::FacilityLocation(void)
 	std::srand(unsigned(std::time(0)));
 
 	//������ facility�� exponential_clock �� ����
+
+	exponential_clock = new double*[NUM_OF_F]; // dynamic allocation
 	for (int i = 0; i < NUM_OF_F; ++i) {
+		exponential_clock[i] = new double[NUM_OF_C]; // dynamic allocation
 		for (int i_ = 0; i_ < NUM_OF_C; i_++) {
 			double y_i = ((double)rand() / (RAND_MAX));
 			std::exponential_distribution<double> distribution(y_i);
@@ -383,11 +408,16 @@ FacilityLocation::FacilityLocation(void)
 	std::random_shuffle(myvector.begin(), myvector.end(), myrandom);
 
 	int i = 0;
+	clock_of_client = new int[NUM_OF_C]; // dynamic allocation
 	for (std::vector<int>::iterator it = myvector.begin(); it != myvector.end(); ++it, ++i)
 		clock_of_client[i] = *it;
 
 
 	/* settiing costs of openings and connections */
+	connection_cost = new double*[NUM_OF_F]; // dynamic allocation
+	for (int i = 0; i < NUM_OF_F; i++) {
+		connection_cost[i] = new double[NUM_OF_C]; // dynamic allocation
+	}
 	for (int i = 0, j = 0; i < NUM_OF_F;) {
 		connection_cost[i][j] = (int)rand() % 100 + 1;
 		j++;
@@ -396,6 +426,7 @@ FacilityLocation::FacilityLocation(void)
 			j = 0;
 		}
 	}
+	opening_cost = new double[NUM_OF_F]; // dynamic allocation
 	for (int i = 0; i < NUM_OF_F; i++) {
 		opening_cost[i] = (int)rand() % 100 + 1;
 	}
@@ -425,7 +456,12 @@ FacilityLocation::FacilityLocation(void)
 
 void calculate_func(bool *connection_table, FacilityLocation *fcl, double *min)
 {
-	bool opening_table[NUM_OF_F] = { 0 };
+	//bool opening_table[NUM_OF_F] = { 0 };
+	bool* opening_table = new bool[NUM_OF_F]; // dynamic allocation
+	for (int i = 0; i < NUM_OF_F; i++) {
+		opening_table[i] = 0; // initialize
+	}
+
 	double total_opening_cost = 0.0, total_connection_cost = 0.0;
 
 	/* calculate total connection_cost */
@@ -442,14 +478,17 @@ void calculate_func(bool *connection_table, FacilityLocation *fcl, double *min)
 	}
 
 	/* update minimum cost solution */
+	fcl->optimal_opening_table = new bool[NUM_OF_F]; // dynamic allocation
+	fcl->optimal_connection_table = new bool*[NUM_OF_F]; // dynamic allocation
 	if ((total_connection_cost + total_opening_cost) < *min) {
 		*min = total_connection_cost + total_opening_cost;
 		for (int i = 0; i < NUM_OF_F; i++)
 			fcl->optimal_opening_table[i] = opening_table[i];
-		for (int j = 0; j < NUM_OF_C; j++)
-			for (int i = 0; i < NUM_OF_F; i++)
+		for (int i = 0; i < NUM_OF_F; i++) {
+			fcl->optimal_connection_table[i] = new bool[NUM_OF_C]; // dynamic allocation
+			for (int j = 0; j < NUM_OF_C; j++)
 				fcl->optimal_connection_table[i][j] = connection_table[i * NUM_OF_C + j];
-
+		}
 		fcl->optimal_cost = total_opening_cost + total_connection_cost;
 
 	}
@@ -474,7 +513,8 @@ void FacilityLocation::brute_force(void)
 	/* find the optimal solution : min(opening cost + connection cost) */
 	/* save the optimal solution to 'optimal_opening_table', 'optimal_connection_table' */
 
-	bool connection_table[NUM_OF_C * NUM_OF_F] = { 0 };
+	//bool connection_table[NUM_OF_C * NUM_OF_F] = { 0 };
+	bool* connection_table = new bool[NUM_OF_C * NUM_OF_F];
 	double min = 999999999;
 
 	recursive_func(connection_table, 0, this, &min);
