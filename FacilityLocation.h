@@ -10,10 +10,13 @@
 #include <cstdlib>      // std::rand, std::srand
 #include <math.h>
 #include <numeric>		// std::iota
+#include <float.h>
 using namespace std;
 
 #define NUM_OF_F 100
 #define NUM_OF_C 1000
+#define OPENING_COST_MAX 100
+#define CONNECTION_COST_MAX 100
 class FacilityLocation {
 private:
 	/* Rounded problem's objective function's cost */
@@ -155,6 +158,11 @@ public:
 	int * get_clock_of_client() {
 		return this->clock_of_client;
 	}
+
+	void set_connection_cost_between_Fi_and_Cj(int i, int j);
+
+	/* get costs from j to jp ; j, jp : client, ip : facility */
+	double get_distance(int j, int jp, int ip);
 };
 
 int CompareDoubleAbsolute(double x, double y, double absTolerance = (1.0e-8));
