@@ -553,7 +553,7 @@ double FacilityLocation::objective(bool optimal)
 
 void FacilityLocation::set_connection_cost_between_Fi_and_Cj(int i, int j) {
 	if (i == 0 || j == 0) {
-		connection_cost[i][j] = (double)rand() / RAND_MAX * (CONNECTION_COST_MAX-1) + 1;
+		connection_cost[i][j] = (int)rand() % CONNECTION_COST_MAX + 1;
 		return;
 	}
 	double min = DBL_MAX;
