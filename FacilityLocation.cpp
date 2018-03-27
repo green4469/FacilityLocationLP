@@ -425,8 +425,8 @@ FacilityLocation::FacilityLocation(void)
 		connection_cost[i] = new double[NUM_OF_C]; // dynamic allocation
 	}
 	for (int i = 0, j = 0; i < NUM_OF_F;) {
-		connection_cost[i][j] = (int)rand() % CONNECTION_COST_MAX + 1;
-		//set_connection_cost_between_Fi_and_Cj(i, j);
+		//connection_cost[i][j] = (int)rand() % CONNECTION_COST_MAX + 1;
+		set_connection_cost_between_Fi_and_Cj(i, j);
 		j++;
 		if (j == NUM_OF_C) {
 			i++;
@@ -566,9 +566,9 @@ void FacilityLocation::set_connection_cost_between_Fi_and_Cj(int i, int j) {
 			}
 		}
 	}
-	double random;
-	while((random = (double)rand() / RAND_MAX) == 1) // 0 <= random < 1
-	connection_cost[i][j] = random * min; // 0 <= connection_cost < min 
+	//double random;
+	//while((random = (double)rand() / RAND_MAX) == 1 || random == 0) // 0 < random < 1
+	connection_cost[i][j] = rand() % (int)min + 1; // 0 < connection_cost < min 
 }
 
 double FacilityLocation::get_distance(int j, int jp, int ip) {
