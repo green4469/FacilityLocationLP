@@ -6,7 +6,11 @@ void print_contents(T a, T b);
 
 int main(int argc, char **argv) {
 	FacilityLocation fl = FacilityLocation();
-	//unsigned int (*connection_cost)[NUM_OF_C]= fl.get_connection_cost();
+
+	/// Debug
+	bool ** oct = fl.get_optimal_connection_table();
+	bool * oot = fl.get_optimal_opening_table();
+	///
 
 	/* LP solver sovle the relaxed problem */
 	double sol = fl.LP_solve();
@@ -16,24 +20,12 @@ int main(int argc, char **argv) {
 	/* Find rounded solution */
 	fl.round();
 	cout << "The obj val of rounding alg : " << fl.get_rounded_cost() << endl;
-
+	//print_contents<bool>(oot, oct);
 }
 
 template <typename T>
 void print_contents(T a, T b)
 {
-<<<<<<< HEAD
-	FacilityLocation ex;
-	ex.LP_solve();
-	ex.random_sample();
-	ex.round();
-	ex.brute_force();
-	ex.objective();
-
-	system("pause");
-	return 0;
-}
-=======
 	for (int i = 0; i < NUM_OF_F; ++i) {
 		cout << "y[" << i << "]: " << a[i] << endl;
 	}
@@ -41,10 +33,9 @@ void print_contents(T a, T b)
 	cout << endl;
 	for (int i = 0; i < NUM_OF_F; ++i) {
 		for (int j = 0; j < NUM_OF_C; ++j) {
-			cout << "x[" << i << "," << j << "]: " << b[i*NUM_OF_C + j] << ' ';
-			printf("%x\n", b[i*NUM_OF_C + j]);
+			cout << "x[" << i << "," << j << "]: " << b[i][j] << ' ';
+			//printf("%x\n", b[i*NUM_OF_C + j]);
 		}
 	}
 	cout << endl;
 }
->>>>>>> 142389070ccb5d1378f0ef4b6b07d2080f3f40e4
