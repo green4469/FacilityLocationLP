@@ -252,7 +252,7 @@ void FacilityLocation::round(void)
 
 	// actual rounding algorithm (20 ~ 27)
 	for (int j = 0; j < NUM_OF_C; j++) {  // j for client, i for facility, j_ for j'
-		double min = 99999999.999;
+		double min = DBL_MAX;
 		int min_client = order_of_client[j];  // pick a client who has the most small  ==>  pick minimum clock element's index
 		
 		// find minimum clock facility
@@ -268,7 +268,7 @@ void FacilityLocation::round(void)
 		}
 
 		// find minimum clock client 
-		min = 999999999.999;
+		min = DBL_MAX;
 		for (int j_ = 0; j_ < NUM_OF_C; j_++) {
 			if (CompareDoubleUlps(copied_connection_variable[min_facility_r][min_facility_c][j_], 0.0) == 1 && clock_of_client[j_] < min) {
 				min_facility_client = j_;
@@ -523,7 +523,7 @@ void FacilityLocation::brute_force(void)
 
 	//bool connection_table[NUM_OF_C * NUM_OF_F] = { 0 };
 	bool* connection_table = new bool[NUM_OF_C * NUM_OF_F];
-	double min = 999999999;
+	double min = DBL_MAX;
 
 	recursive_func(connection_table, 0, this, &min);
 }

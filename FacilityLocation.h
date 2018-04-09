@@ -13,8 +13,8 @@
 
 using namespace std;
 
-#define NUM_OF_F 100
-#define NUM_OF_C 1000
+#define NUM_OF_F 10
+#define NUM_OF_C 100
 #define CONNECTION_COST_MAX 100
 class FacilityLocation {
 private:
@@ -23,37 +23,6 @@ private:
 
 	/* Original problem's objective function's optimal cost */
 	double optimal_cost;
-
-	
-	/* Input of LP-solver */
-	//double opening_cost[NUM_OF_F];
-	//double connection_cost[NUM_OF_F][NUM_OF_C];
-
-	/* output of LP-solver */
-	//double opening_variable[NUM_OF_F];
-	//double connection_variable[NUM_OF_F][NUM_OF_C];
-
-	/* exponential clocks of facilities */
-	//double exponential_clock[NUM_OF_F][NUM_OF_C];
-
-	/* the order of the exponential clocks of the clients by ascending */
-	//int clock_of_client[NUM_OF_C];
-
-	/* Preprocessing */
-	//double copied_opening_cost[NUM_OF_F][NUM_OF_C];  // f'
-	//double copied_connection_cost[NUM_OF_F][NUM_OF_C][NUM_OF_C];  // d'
-	//double copied_opening_variable[NUM_OF_F][NUM_OF_C];  // y'
-	//double copied_connection_variable[NUM_OF_F][NUM_OF_C][NUM_OF_C];  // x'
-	//bool copied_opening_table[NUM_OF_F][NUM_OF_C];  // M
-	//bool copied_connection_table[NUM_OF_F][NUM_OF_C][NUM_OF_C];  // M'
-
-	/* output of Rounding Algorithm */
-	//bool opening_table[NUM_OF_F];
-	//bool connection_table[NUM_OF_F][NUM_OF_C];
-
-	/* output of Brute-force Algorithm */
-	//bool optimal_opening_table[NUM_OF_F];
-	//bool optimal_connection_table[NUM_OF_F][NUM_OF_C];
 
 	/* ---------------dynamic allocation version--------------------- */
 	/* Input of LP-solver */
