@@ -16,8 +16,13 @@ using namespace std;
 #define NUM_OF_F 100
 #define NUM_OF_C 1000
 #define CONNECTION_COST_MAX 100
+
+
 class FacilityLocation {
 private:
+
+	int n_facilities;
+	int n_clients;
 	/* Rounded problem's objective function's cost */
 	double rounded_cost;
 
@@ -89,7 +94,7 @@ private:
 
 public:
 	/* constructor, inside it initialize the oppening cost, connection cost, clients' clocks, facilities' clocks */
-	FacilityLocation();
+	FacilityLocation(int argc, char* argv[]);
 
 	/* solve the LP-relaxed facility location problem */
 	double LP_solve();
@@ -151,6 +156,13 @@ public:
 
 	int * get_clock_of_client() {
 		return this->clock_of_client;
+	}
+
+	int get_n_facilities() {
+		return n_facilities;
+	}
+	int get_n_clients() {
+		return n_clients;
 	}
 };
 
