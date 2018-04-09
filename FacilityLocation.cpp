@@ -1,6 +1,6 @@
 ﻿#include "FacilityLocation.h"
 
-int CompareDoubleUlps(double x, double y, int ulpsTolerance = 4)
+int CompareDoubleUlps(double x, double y, int UlpsTolerance)
 {
 	double diff = x - y;
 
@@ -15,8 +15,8 @@ int CompareDoubleUlps(double x, double y, int ulpsTolerance = 4)
 		return (diff > 0) ? 1 : -1;
 	}
 
-	__int64 ulpsDiff = nx - ny;
-	if ((ulpsDiff >= 0 ? ulpsDiff : -ulpsDiff) <= ulpsTolerance)
+	__int64 UlpsDiff = nx - ny;
+	if ((UlpsDiff >= 0 ? UlpsDiff : -UlpsDiff) <= UlpsTolerance)
 		return 0;
 
 	return (diff > 0) ? 1 : -1;
@@ -181,7 +181,7 @@ void FacilityLocation::round(void)
 		vector<double> v;  // v contains the index j of clients who are partially connected to facility i.
 		
 		for (int j = 0; j < NUM_OF_C; j++) {
-			//if (CompareDoubleAbsolute(connection_variable[i][j], 0.0) <= 0)
+			//if (CompareDoubleUlps(connection_variable[i][j], 0.0) <= 0)
 			//	continue;
 			v.push_back(connection_variable[i][j]);  // save connection variables to v
 		}
@@ -252,7 +252,7 @@ void FacilityLocation::round(void)
 
 	// actual rounding algorithm (20 ~ 27)
 	for (int j = 0; j < NUM_OF_C; j++) {  // j for client, i for facility, j_ for j'
-		double min = DBL_MAX;
+		double min = 99999999.999;
 		int min_client = order_of_client[j];  // pick a client who has the most small  ==>  pick minimum clock element's index
 		
 		// find minimum clock facility
@@ -268,7 +268,7 @@ void FacilityLocation::round(void)
 		}
 
 		// find minimum clock client 
-		min = DBL_MAX;
+		min = 999999999.999;
 		for (int j_ = 0; j_ < NUM_OF_C; j_++) {
 			if (CompareDoubleUlps(copied_connection_variable[min_facility_r][min_facility_c][j_], 0.0) == 1 && clock_of_client[j_] < min) {
 				min_facility_client = j_;
@@ -322,7 +322,7 @@ void FacilityLocation::round(void)
 	/////////
 
 	/* Calculate Cost ( objective function ) */
-	int total_opening_cost = 0, total_connection_cost = 0;
+	double total_opening_cost = 0, total_connection_cost = 0.0;
 
 	/* calculate total connection_cost */
 	for (int j = 0; j < NUM_OF_C; j++) {  // calculate total connection_cost
@@ -425,8 +425,9 @@ FacilityLocation::FacilityLocation(void)
 		connection_cost[i] = new double[NUM_OF_C]; // dynamic allocation
 	}
 	for (int i = 0, j = 0; i < NUM_OF_F;) {
-		//connection_cost[i][j] = (int)rand() % CONNECTION_COST_MAX + 1;
-		set_connection_cost_between_Fi_and_Cj(i, j);
+		// connection_cost[i][j] = (double)rand() % 100 + 1;
+		connection_cost[i][j] = (double)rand() / RAND_MAX * (CONNECTION_COST_MAX - 1) + 1;
+
 		j++;
 		if (j == NUM_OF_C) {
 			i++;
@@ -435,8 +436,7 @@ FacilityLocation::FacilityLocation(void)
 	}
 	opening_cost = new double[NUM_OF_F]; // dynamic allocation
 	for (int i = 0; i < NUM_OF_F; i++) {
-		//opening_cost[i] = (int)rand() % OPENING_COST_MAX + 1;
-		opening_cost[i] = (double)rand() / RAND_MAX *( OPENING_COST_MAX - 1 ) + 1;
+		opening_cost[i] = (double)rand() / RAND_MAX * (CONNECTION_COST_MAX - 1) + 1;
 	}
 
 	// print out content:
@@ -523,7 +523,7 @@ void FacilityLocation::brute_force(void)
 
 	//bool connection_table[NUM_OF_C * NUM_OF_F] = { 0 };
 	bool* connection_table = new bool[NUM_OF_C * NUM_OF_F];
-	double min = DBL_MAX;
+	double min = 999999999;
 
 	recursive_func(connection_table, 0, this, &min);
 }
@@ -550,30 +550,4 @@ double FacilityLocation::objective(bool optimal)
 
 	}
 	return sol;
-}
-
-void FacilityLocation::set_connection_cost_between_Fi_and_Cj(int i, int j) {
-	if (i == 0 || j == 0) {
-		//connection_cost[i][j] = (int)rand() % CONNECTION_COST_MAX + 1;
-		connection_cost[i][j] = (double)rand() / RAND_MAX * (CONNECTION_COST_MAX - 1) + 1;
-		return;
-	}
-	double min = DBL_MAX;
-	/* for triangle inequality */
-	for (int ip = 0; ip < i; ip++) {
-		for (int jp = 0; jp < j; jp++) {
-			double d = get_distance(j, jp, ip);
-			if (min > d + connection_cost[i][jp]) {
-				min = d + connection_cost[i][jp];
-			}
-		}
-	}
-	double random;
-	while ((random = (double)rand() / RAND_MAX) == 1) {} // 0 <= random < 1
-	connection_cost[i][j] = random * (min-1) + 1; // 1 <= connection_cost < min 
-	//connection_cost[i][j] = rand() % (int)min + 1; // 0 < connection_cost < min 
-}
-
-double FacilityLocation::get_distance(int j, int jp, int ip) {
-	return connection_cost[ip][j] + connection_cost[ip][jp];
 }

@@ -10,12 +10,11 @@
 #include <cstdlib>      // std::rand, std::srand
 #include <math.h>
 #include <numeric>		// std::iota
-#include <float.h>
+
 using namespace std;
 
-#define NUM_OF_F 10
-#define NUM_OF_C 100
-#define OPENING_COST_MAX 100
+#define NUM_OF_F 100
+#define NUM_OF_C 1000
 #define CONNECTION_COST_MAX 100
 class FacilityLocation {
 private:
@@ -90,25 +89,20 @@ private:
 
 public:
 	/* constructor, inside it initialize the oppening cost, connection cost, clients' clocks, facilities' clocks */
-	// �м�
 	FacilityLocation();
 
 	/* solve the LP-relaxed facility location problem */
-	// ����
 	double LP_solve();
 
 	/* round the LP-relaxed solution to the original problem's solution */
-	// ����
 	void round();
 
 	/* check all possible solutions and pick the minimum cost (brute-force) */
-	// ����
 	void brute_force();
 
 	friend void calculate_func(bool *connection_table, FacilityLocation *fcl, double *min);
 
 	/* compare LP rounded solution and optimal solution */
-	// ����
 	double objective(bool optimal = 0);
 
 	double get_optimal_cost() {
@@ -158,11 +152,6 @@ public:
 	int * get_clock_of_client() {
 		return this->clock_of_client;
 	}
-
-	void set_connection_cost_between_Fi_and_Cj(int i, int j);
-
-	/* get costs from j to jp ; j, jp : client, ip : facility */
-	double get_distance(int j, int jp, int ip);
 };
 
-int CompareDoubleAbsolute(double x, double y, double absTolerance = (1.0e-8));
+int CompareDoubleUlps(double x, double y, int ulpsTolerance = 4);
