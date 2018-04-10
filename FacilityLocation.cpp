@@ -1,6 +1,6 @@
-﻿#include "FacilityLocation.h"
+﻿#include "Header.h"
 
-int CompareDoubleUlps(double x, double y, int ulpsTolerance = 4)
+int CompareDoubleUlps(double x, double y, int ulpsTolerance)
 {
 	double diff = x - y;
 
@@ -28,40 +28,150 @@ double FacilityLocation::LP_solve(void)
 	IloEnv env;
 
 	/* set and initialize connection variables */
+	/*
 	IloNumVar * x = new IloNumVar[NUM_OF_F * NUM_OF_C];
 	//IloNumVar x[NUM_OF_C * NUM_OF_F];
 	for (int i = 0; i < NUM_OF_F; ++i) {
-		for (int j = 0; j < NUM_OF_C; ++j) {
-			x[i*NUM_OF_C + j] = IloNumVar(env, 0, IloInfinity);
-		}
+	for (int j = 0; j < NUM_OF_C; ++j) {
+	x[i*NUM_OF_C + j] = IloNumVar(env, 0, IloInfinity);
 	}
+	}
+	*/
+	IloNumVarArray x(env, (IloInt)(NUM_OF_F * NUM_OF_C), (IloNum)0, IloInfinity);
+
 
 	/* set and initialize opening variables */
+	/*
 	IloNumVar *y = new IloNumVar[NUM_OF_F];
 	//IloNumVar y[NUM_OF_F];
 	for (int i = 0; i < NUM_OF_F; ++i)
-		y[i] = IloNumVar(env, 0, IloInfinity);
+	y[i] = IloNumVar(env, 0, IloInfinity);
+	*/
+	IloNumVarArray y(env, (IloInt)NUM_OF_F, (IloNum)0, IloInfinity);
+
 
 	/* set ranges of sums of connection variables (1 <= sum_i(x_ij) <= 1 for all j) */
+	/*
 	IloExpr * sum_expr = new IloExpr[NUM_OF_C];
 	IloRange * sum_condition = new IloRange[NUM_OF_C];
 	//IloExpr sum_expr[NUM_OF_C];
 	//IloRange sum_condition[NUM_OF_C];
 	for (int j = 0; j < NUM_OF_C; ++j) {
-		sum_expr[j] = IloExpr(env);
+	sum_expr[j] = IloExpr(env);
+	for (int i = 0; i < NUM_OF_F; ++i) {
+	sum_expr[j] += x[i*NUM_OF_C + j];
+	}
+	sum_condition[j] = (sum_expr[j] == 1.0);
+	}
+	*/
+	IloExprArray sum_expr(env);
+	IloRangeArray sum_condition(env);
+	for (int j = 0; j < NUM_OF_C; ++j) {
+		sum_expr.add(IloExpr(env));
 		for (int i = 0; i < NUM_OF_F; ++i) {
 			sum_expr[j] += x[i*NUM_OF_C + j];
 		}
-		sum_condition[j] = (sum_expr[j] == 1.0);
+		sum_condition.add(sum_expr[j] == 1.0);
 	}
 
 
+
 	/* set ranges of connection variables and opening variables (-inf <= x_ij - y_i <= 0 for all i, j) */
+	/*
 	IloRange * x_range = new IloRange[NUM_OF_C * NUM_OF_F];
 	//IloRange x_range[NUM_OF_C * NUM_OF_F];
 	for (int i = 0; i < NUM_OF_F; ++i) {
+	for (int j = 0; j < NUM_OF_C; ++j) {
+	x_range[i * NUM_OF_C + j] = IloRange(env, -IloInfinity, 0);
+	x_range[i * NUM_OF_C + j].setLinearCoef(x[i*NUM_OF_C + j], 1);
+	x_range[i * NUM_OF_C + j].setLinearCoef(y[i], -1);
+	}
+	}
+	*/
+	IloRangeArray x_range(env);
+	for (int i = 0; i < NUM_OF_F; ++i) {
 		for (int j = 0; j < NUM_OF_C; ++j) {
-			x_range[i * NUM_OF_C + j] = IloRange(env, -IloInfinity, 0);
+			x_range.add(IloRange(env, -IloInfinity, 0));
+			x_range[i * NUM_OF_C + j].setLinearCoef(x[i*NUM_OF_C + j], 1);
+			x_range[i * NUM_OF_C + j].setLinearCoef(y[i], -1);
+		}
+	}
+
+	/* set the obj fct (minimize sum_i(y_i*f_i) + sum_{i,j}(x_ij*d(i,j)) )*/
+	IloObjective obj = IloMinimize(env, 0);
+	for (int i = 0; i < NUM_OF_F; ++i) {
+		obj.setLinearCoef(y[i], this->opening_cost[i]);
+		for (int j = 0; j < NUM_OF_C; ++j) {
+			obj.setLinearCoef(x[i*NUM_OF_C + j], this->connection_cost[i][j]);
+		}
+	}
+
+	/* compile the model */
+	/*
+	IloModel model(env);
+	for (int j = 0; j < NUM_OF_C; ++j) {
+	//model.add(sum_range[j]);
+	model.add(sum_condition[j]);
+	for (int i = 0; i < NUM_OF_F; ++i) {
+	model.add(x_range[i*NUM_OF_C + j]);
+	}
+	}
+	*/
+	IloModel model(env);
+	model.add(sum_condition);
+	model.add(x_range);
+	model.add(obj);
+
+	/* solve the model */
+	IloCplex solver(model);
+	try {
+		solver.solve();
+	}
+	catch (IloException &ex) {
+		cerr << ex << endl;
+	}
+	cout << solver.getObjValue() << endl;
+	cout << solver.getValue(x[0]) << endl;
+	/* save results*/
+	for (int i = 0; i < NUM_OF_F; ++i) {
+		this->opening_variable[i] = solver.getValue(y[i]);
+		for (int j = 0; j < NUM_OF_C; ++j) {
+			this->connection_variable[i][j] = solver.getValue(x[i*NUM_OF_C + j]);
+		}
+	}
+	return solver.getObjValue();
+}
+
+double FacilityLocation::get_optimal(void)
+{
+	IloEnv env;
+
+	/* set and initialize connection variables */
+	IloIntVarArray x(env, (IloInt)(NUM_OF_F * NUM_OF_C), (IloInt)0, IloInfinity);
+
+
+	/* set and initialize opening variables */
+	IloIntVarArray y(env, (IloInt)NUM_OF_F, (IloInt)0, IloInfinity);
+
+
+	/* set ranges of sums of connection variables (1 <= sum_i(x_ij) <= 1 for all j) */
+	IloExprArray sum_expr(env);
+	IloRangeArray sum_condition(env);
+	for (int j = 0; j < NUM_OF_C; ++j) {
+		sum_expr.add(IloExpr(env));
+		for (int i = 0; i < NUM_OF_F; ++i) {
+			sum_expr[j] += x[i*NUM_OF_C + j];
+		}
+		sum_condition.add(sum_expr[j] == 1.0);
+	}
+
+
+
+	/* set ranges of connection variables and opening variables (-inf <= x_ij - y_i <= 0 for all i, j) */
+	IloRangeArray x_range(env);
+	for (int i = 0; i < NUM_OF_F; ++i) {
+		for (int j = 0; j < NUM_OF_C; ++j) {
+			x_range.add(IloRange(env, -IloInfinity, 0));
 			x_range[i * NUM_OF_C + j].setLinearCoef(x[i*NUM_OF_C + j], 1);
 			x_range[i * NUM_OF_C + j].setLinearCoef(y[i], -1);
 		}
@@ -78,13 +188,8 @@ double FacilityLocation::LP_solve(void)
 
 	/* compile the model */
 	IloModel model(env);
-	for (int j = 0; j < NUM_OF_C; ++j) {
-		//model.add(sum_range[j]);
-		model.add(sum_condition[j]);
-		for (int i = 0; i < NUM_OF_F; ++i) {
-			model.add(x_range[i*NUM_OF_C + j]);
-		}
-	}
+	model.add(sum_condition);
+	model.add(x_range);
 	model.add(obj);
 
 	/* solve the model */
@@ -98,10 +203,7 @@ double FacilityLocation::LP_solve(void)
 	cout << solver.getObjValue() << endl;
 	cout << solver.getValue(x[0]) << endl;
 	/* save results*/
-	opening_variable = new double[NUM_OF_F]; // dynamic allocation
-	connection_variable = new double*[NUM_OF_F]; 
 	for (int i = 0; i < NUM_OF_F; ++i) {
-		connection_variable[i] = new double[NUM_OF_C]; // dynamic allocation
 		this->opening_variable[i] = solver.getValue(y[i]);
 		for (int j = 0; j < NUM_OF_C; ++j) {
 			this->connection_variable[i][j] = solver.getValue(x[i*NUM_OF_C + j]);
@@ -110,6 +212,7 @@ double FacilityLocation::LP_solve(void)
 
 	return solver.getObjValue();
 }
+
 
 template <typename T>
 vector<size_t> sort_indexes(const vector<T> &v) {
@@ -159,7 +262,7 @@ void FacilityLocation::round(void)
 	for (int i = 0; i < NUM_OF_F; i++) {
 		copied_opening_variable[i] = new double[NUM_OF_C]; // dynamic allocation
 		for (int j = 0; j < NUM_OF_C; j++) {
-			copied_opening_variable[i][j] = 0.0; 
+			copied_opening_variable[i][j] = 0.0;
 		}
 	}
 
@@ -179,18 +282,18 @@ void FacilityLocation::round(void)
 		// connection variable index sorting (6 ~ 8)
 		size_t *increasing_index;
 		vector<double> v;  // v contains the index j of clients who are partially connected to facility i.
-		
+
 		for (int j = 0; j < NUM_OF_C; j++) {
 			//if (CompareDoubleAbsolute(connection_variable[i][j], 0.0) <= 0)
 			//	continue;
 			v.push_back(connection_variable[i][j]);  // save connection variables to v
 		}
 		vector<size_t> vid = sort_indexes(v);  // sort the index by its connection variable value
-		
+
 		increasing_index = &vid[0];  // from vector to list.
 
 
-		// assign values to copied_opening_variable (9 ~ 11)
+									 // assign values to copied_opening_variable (9 ~ 11)
 		copied_opening_variable[i][0] = connection_variable[i][increasing_index[0]];
 		for (int j = 1; j < NUM_OF_C; j++) {
 			copied_opening_variable[i][j] = connection_variable[i][increasing_index[j]] - connection_variable[i][increasing_index[j - 1]];
@@ -254,8 +357,8 @@ void FacilityLocation::round(void)
 	for (int j = 0; j < NUM_OF_C; j++) {  // j for client, i for facility, j_ for j'
 		double min = 99999999.999;
 		int min_client = order_of_client[j];  // pick a client who has the most small  ==>  pick minimum clock element's index
-		
-		// find minimum clock facility
+
+											  // find minimum clock facility
 		int min_facility_r, min_facility_c, min_facility_client;
 		for (int i = 0; i < NUM_OF_F; i++) {
 			for (int i_ = 0; i_ < NUM_OF_C; i_++) {

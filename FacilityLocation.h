@@ -22,7 +22,7 @@ private:
 	/* Original problem's objective function's optimal cost */
 	double optimal_cost;
 
-	
+
 	/* Input of LP-solver */
 	//double opening_cost[NUM_OF_F];
 	//double connection_cost[NUM_OF_F][NUM_OF_C];
@@ -58,17 +58,17 @@ private:
 	double *opening_cost; // [NUM_OF_F] check
 	double **connection_cost; //[NUM_OF_F][NUM_OF_C]; check
 
-	/* output of LP-solver */
+							  /* output of LP-solver */
 	double* opening_variable; //[NUM_OF_F]; check
 	double** connection_variable; // [NUM_OF_F][NUM_OF_C]; check
 
-	/* exponential clocks of facilities */
+								  /* exponential clocks of facilities */
 	double** exponential_clock; // [NUM_OF_F][NUM_OF_C];  check
 
-	/* the order of the exponential clocks of the clients by ascending */
+								/* the order of the exponential clocks of the clients by ascending */
 	int* clock_of_client; // [NUM_OF_C];   check
 
-	/* Preprocessing */
+						  /* Preprocessing */
 	double** copied_opening_cost; // [NUM_OF_F][NUM_OF_C];  // f' check
 	double*** copied_connection_cost; // [NUM_OF_F][NUM_OF_C][NUM_OF_C];  // d' check
 	double** copied_opening_variable; // [NUM_OF_F][NUM_OF_C];  // y' check
@@ -76,11 +76,11 @@ private:
 	bool** copied_opening_table; // [NUM_OF_F][NUM_OF_C];  // M check
 	bool*** copied_connection_table; // [NUM_OF_F][NUM_OF_C][NUM_OF_C];  // M' check
 
-																 /* output of Rounding Algorithm */
+									 /* output of Rounding Algorithm */
 	bool* opening_table; // [NUM_OF_F]; // check
 	bool** connection_table; // [NUM_OF_F][NUM_OF_C]; check
 
-	/* output of Brute-force Algorithm */
+							 /* output of Brute-force Algorithm */
 	bool* optimal_opening_table; // [NUM_OF_F]; check
 	bool** optimal_connection_table; // [NUM_OF_F][NUM_OF_C]; check
 
@@ -93,6 +93,7 @@ public:
 	/* solve the LP-relaxed facility location problem */
 	// ����
 	double LP_solve();
+	double get_optimal();
 
 	/* round the LP-relaxed solution to the original problem's solution */
 	// ����
@@ -115,8 +116,8 @@ public:
 	double get_rounded_cost() {
 		return this->rounded_cost;
 	}
-	
-	double ** get_connection_cost(){
+
+	double ** get_connection_cost() {
 		return this->connection_cost;
 	}
 
@@ -124,7 +125,7 @@ public:
 		return this->opening_cost;
 	}
 
-	bool ** get_optimal_connection_table(){
+	bool ** get_optimal_connection_table() {
 		return this->optimal_connection_table;
 	}
 
@@ -136,7 +137,7 @@ public:
 		return this->opening_variable;
 	}
 
-	double ** get_connection_variable(){
+	double ** get_connection_variable() {
 		return this->connection_variable;
 	}
 
@@ -144,7 +145,7 @@ public:
 		return this->opening_table;
 	}
 
-	bool ** get_connection_table(){
+	bool ** get_connection_table() {
 		return this->connection_table;
 	}
 
@@ -157,4 +158,5 @@ public:
 	}
 };
 
-int CompareDoubleAbsolute(double x, double y, double absTolerance = (1.0e-8));
+int CompareDoubleUlps(double x, double y, int ulpsTolerance = 6);
+
