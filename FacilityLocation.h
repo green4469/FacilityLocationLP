@@ -16,8 +16,13 @@ using namespace std;
 #define NUM_OF_F 10
 #define NUM_OF_C 100
 #define CONNECTION_COST_MAX 100
+
+
 class FacilityLocation {
 private:
+
+	int n_facilities;
+	int n_clients;
 	/* Rounded problem's objective function's cost */
 	double rounded_cost;
 
@@ -47,32 +52,22 @@ private:
 	bool** copied_opening_table; // [NUM_OF_F][NUM_OF_C];  // M check
 	bool*** copied_connection_table; // [NUM_OF_F][NUM_OF_C][NUM_OF_C];  // M' check
 
-																 /* output of Rounding Algorithm */
+	/* output of Rounding Algorithm */
 	bool* opening_table; // [NUM_OF_F]; // check
 	bool** connection_table; // [NUM_OF_F][NUM_OF_C]; check
 
-	/* output of Brute-force Algorithm */
-	bool* optimal_opening_table; // [NUM_OF_F]; check
-	bool** optimal_connection_table; // [NUM_OF_F][NUM_OF_C]; check
-
-
 public:
 	/* constructor, inside it initialize the oppening cost, connection cost, clients' clocks, facilities' clocks */
-	FacilityLocation();
+	FacilityLocation(int argc, char* argv[]);
+
+	/* Deconstructor, delete the dynamically allocated memory of class members. */
+	~FacilityLocation();
 
 	/* solve the LP-relaxed facility location problem */
 	double LP_solve();
 
 	/* round the LP-relaxed solution to the original problem's solution */
 	void round();
-
-	/* check all possible solutions and pick the minimum cost (brute-force) */
-	void brute_force();
-
-	friend void calculate_func(bool *connection_table, FacilityLocation *fcl, double *min);
-
-	/* compare LP rounded solution and optimal solution */
-	double objective(bool optimal = 0);
 
 	double get_optimal_cost() {
 		return this->optimal_cost;
@@ -88,14 +83,6 @@ public:
 
 	double * get_opening_cost() {
 		return this->opening_cost;
-	}
-
-	bool ** get_optimal_connection_table(){
-		return this->optimal_connection_table;
-	}
-
-	bool * get_optimal_opening_table() {
-		return this->optimal_opening_table;
 	}
 
 	double * get_opening_variable() {
@@ -120,6 +107,13 @@ public:
 
 	int * get_clock_of_client() {
 		return this->clock_of_client;
+	}
+
+	int get_n_facilities() {
+		return n_facilities;
+	}
+	int get_n_clients() {
+		return n_clients;
 	}
 };
 
