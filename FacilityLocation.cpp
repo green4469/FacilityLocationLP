@@ -160,12 +160,6 @@ double FacilityLocation::get_optimal(void)
 		sum_expr.add(IloExpr(env));
 		for (int i = 0; i < n_facilities; ++i) {
 			sum_expr[j] += x[i*n_clients + j];
-=======
-		//model.add(sum_range[j]);
-		model.add(sum_condition[j]);
-		for (int i = 0; i < n_facilities; ++i) {
-			model.add(x_range[i*n_clients + j]);
->>>>>>> origin/yumin
 		}
 		sum_condition.add(sum_expr[j] == 1.0);
 	}
@@ -214,6 +208,7 @@ double FacilityLocation::get_optimal(void)
 			this->connection_variable[i][j] = solver.getValue(x[i*n_clients + j]);
 		}
 	}
+
 	return solver.getObjValue();
 }
 
