@@ -13,37 +13,37 @@ void print_contents(T a, T b);
 
 int main(int argc, char* argv[]) // argv : file name (ex: FLP_IN_0001.txt)
 {
-	FacilityLocation fl = FacilityLocation(argc,argv);
+	FacilityLocation *fl = new FacilityLocation(argc,argv);
 	printf("다만들어써\n");
 	string out_file;
 	out_file = argv[1];
 	out_file = replace_all(out_file, "IN", "OUT");
 	ofstream out(out_file);
 	/// Debug
-	int n_facilities = fl.get_n_facilities();
-	int n_clients = fl.get_n_clients();
+	int n_facilities = fl->get_n_facilities();
+	int n_clients = fl->get_n_clients();
 	///
 
 	/* LP solver sovle the relaxed problem */
-	double sol = fl.LP_solve();
+	double sol = fl->LP_solve();
 	cout << "The obj val of relaxation : " << sol << endl;
 	cout << endl;
 
 	/* Find rounded solution */
-	fl.round();
+	fl->round();
 	double rounded_cost;
-	cout << "The obj val of rounding alg : " << (rounded_cost = fl.get_rounded_cost()) << endl;
+	cout << "The obj val of rounding alg : " << (rounded_cost = fl->get_rounded_cost()) << endl;
 	//print_contents<bool>(oot, oct);
 	out << sol << endl;
 	out << rounded_cost << endl;
-	bool* opening_table = fl.get_opening_table();
+	bool* opening_table = fl->get_opening_table();
 	for (int i = 0; i < n_facilities; i++) {
 		if (opening_table[i] == true) {
 			out << i << " ";
 		}
 	}
 	out << endl;
-	bool ** connection_table = fl.get_connection_table();
+	bool ** connection_table = fl->get_connection_table();
 	for (int i = 0; i < n_facilities; i++) {
 		for (int j = 0; j < n_clients; j++) {
 			if (connection_table[i][j] == true) {
@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) // argv : file name (ex: FLP_IN_0001.txt)
 		}
 	}
 
-	fl.~FacilityLocation();
+	delete fl;
 	return 0;
 }
 
