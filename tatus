@@ -1,0 +1,68 @@
+[33mcommit 6a03b9de596e4da6e1516468718518029fc8a400[m[33m ([m[1;36mHEAD -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Merge: 8c33b33 312ac9a
+Author: mjpyeon <pyeon94@gmail.com>
+Date:   Sun Mar 18 11:16:11 2018 +0900
+
+    define the rounding algorithm
+
+[33mcommit 312ac9a2afe71d77357ca6471aefbb722bad66f4[m[33m ([m[1;31morigin/yumin[m[33m)[m
+Author: yumin <green4469@gmail.com>
+Date:   Sun Mar 18 10:49:44 2018 +0900
+
+    modified codes
+
+[33mcommit f0f7028af62132c949c58ab3bd623075b04e5f41[m
+Author: yumin <green4469@gmail.com>
+Date:   Sun Mar 18 08:25:12 2018 +0900
+
+    added round function, brute force function
+
+[33mcommit 8c33b3379531b0eca4ea82d0b5d33e0140fde031[m
+Author: mjpyeon <pyeon94@gmail.com>
+Date:   Fri Mar 16 21:59:10 2018 +0900
+
+    no message
+
+[33mcommit 21f9234e6819f90f0d81bc365b46fd41d93b7973[m[33m ([m[1;31morigin/myeongjang[m[33m)[m
+Merge: 52432e5 695697d
+Author: mjpyeon <pyeon94@gmail.com>
+Date:   Fri Mar 16 20:38:28 2018 +0900
+
+    Merge remote-tracking branch 'origin/Haksu' into myeongjang
+    
+    # Conflicts:
+    #       FacilityLocation.cpp
+    #       FacilityLocation.h
+
+[33mcommit 695697dc848ea5c8d7b6284e5c8d975573aab8ac[m
+Author: Haksu <limhaksu@naver.com>
+Date:   Fri Mar 16 20:32:48 2018 +0900
+
+    sampling
+
+[33mcommit 52432e5e169aced3707213aa03597bb6bf5aeea5[m
+Author: mjpyeon <pyeon94@gmail.com>
+Date:   Fri Mar 16 19:38:31 2018 +0900
+
+    Implement LP_solver (return as double)
+
+[33mcommit e277737dff89b05119ed2f6a83a0e8046b72c6e9[m
+Author: mjpyeon <pyeon94@gmail.com>
+Date:   Fri Mar 16 18:31:56 2018 +0900
+
+    type conversion: int -> unsigned int
+    function definition: FacilityLocationLP::objective(bool optimal)
+    add a parameter: FacilityLocationLP::objective(bool optimal)
+      if optimal is true, we can return the value of the obj fct of opt sol
+
+[33mcommit 43daf500fa790a85db74fbdb8c50db555f5eaf87[m
+Author: Haksu <limhaksu@naver.com>
+Date:   Fri Mar 16 11:21:24 2018 +0900
+
+    test
+
+[33mcommit bb339ee8a9ef69b93977ba8fba5453a7225f52c9[m
+Author: yumin <green4469@gmail.com>
+Date:   Thu Mar 15 21:38:00 2018 +0900
+
+    added skeleton code
