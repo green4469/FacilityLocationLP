@@ -31,30 +31,30 @@ private:
 
 	/* ---------------dynamic allocation version--------------------- */
 	/* Input of LP-solver */
-	double *opening_cost; // [NUM_OF_F] check
-	double **connection_cost; //[NUM_OF_F][NUM_OF_C]; check
+	double *opening_cost = NULL; // [NUM_OF_F] check
+	double **connection_cost = NULL; //[NUM_OF_F][NUM_OF_C]; check
 
 	/* output of LP-solver */
-	double* opening_variable; //[NUM_OF_F]; check
-	double** connection_variable; // [NUM_OF_F][NUM_OF_C]; check
+	double* opening_variable = NULL; //[NUM_OF_F]; check
+	double** connection_variable = NULL; // [NUM_OF_F][NUM_OF_C]; check
 
 	/* exponential clocks of facilities */
-	double** exponential_clock; // [NUM_OF_F][NUM_OF_C];  check
+	double** exponential_clock = NULL; // [NUM_OF_F][NUM_OF_C];  check
 
 	/* the order of the exponential clocks of the clients by ascending */
-	int* clock_of_client; // [NUM_OF_C];   check
+	int* clock_of_client = NULL; // [NUM_OF_C];   check
 
 	/* Preprocessing */
-	double** copied_opening_cost; // [NUM_OF_F][NUM_OF_C];  // f' check
-	double*** copied_connection_cost; // [NUM_OF_F][NUM_OF_C][NUM_OF_C];  // d' check
-	double** copied_opening_variable; // [NUM_OF_F][NUM_OF_C];  // y' check
-	double*** copied_connection_variable; // [NUM_OF_F][NUM_OF_C][NUM_OF_C];  // x' check
-	bool** copied_opening_table; // [NUM_OF_F][NUM_OF_C];  // M check
-	bool*** copied_connection_table; // [NUM_OF_F][NUM_OF_C][NUM_OF_C];  // M' check
+	double** copied_opening_cost = NULL; // [NUM_OF_F][NUM_OF_C];  // f' check
+	double*** copied_connection_cost = NULL; // [NUM_OF_F][NUM_OF_C][NUM_OF_C];  // d' check
+	double** copied_opening_variable = NULL; // [NUM_OF_F][NUM_OF_C];  // y' check
+	double*** copied_connection_variable = NULL; // [NUM_OF_F][NUM_OF_C][NUM_OF_C];  // x' check
+	bool** copied_opening_table = NULL; // [NUM_OF_F][NUM_OF_C];  // M check
+	bool*** copied_connection_table = NULL; // [NUM_OF_F][NUM_OF_C][NUM_OF_C];  // M' check
 
 	/* output of Rounding Algorithm */
-	bool* opening_table; // [NUM_OF_F]; // check
-	bool** connection_table; // [NUM_OF_F][NUM_OF_C]; check
+	bool* opening_table = NULL; // [NUM_OF_F]; // check
+	bool** connection_table = NULL; // [NUM_OF_F][NUM_OF_C]; check
 
 public:
 	/* constructor, inside it initialize the oppening cost, connection cost, clients' clocks, facilities' clocks */
