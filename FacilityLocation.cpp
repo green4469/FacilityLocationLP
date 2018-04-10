@@ -414,7 +414,7 @@ void FacilityLocation::round(void)
 		connection_table[facility_r][j] = 1;
 	}
 	/////////
-	/* Print for Debug */
+	/* Print for Debug 
 	for (int j = 0; j < n_clients; j++) {
 		int sum = 0;
 		int connected_facility = 0;
@@ -425,6 +425,7 @@ void FacilityLocation::round(void)
 		}
 		cout << j << "th client's connection sum: " << sum << ", connected facility is " << connected_facility << ", connection cost is " << connection_cost[connected_facility][j] << endl;
 	}
+	*/
 	/////////
 	/* Calculate Cost ( objective function ) */
 	double total_opening_cost = 0, total_connection_cost = 0.0;
