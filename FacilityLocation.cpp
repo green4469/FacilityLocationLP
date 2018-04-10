@@ -22,44 +22,76 @@ int CompareDoubleUlps(double x, double y, int UlpsTolerance)
 
 	return (diff > 0) ? 1 : -1;
 }
+
 double FacilityLocation::LP_solve(void)
 {
 	IloEnv env;
+
 	/* set and initialize connection variables */
+	/*
 	IloNumVar * x = new IloNumVar[n_facilities * n_clients];
 	//IloNumVar x[n_clients * n_facilities];
 	for (int i = 0; i < n_facilities; ++i) {
-		for (int j = 0; j < n_clients; ++j) {
-			x[i*n_clients + j] = IloNumVar(env, 0, IloInfinity);
-		}
+	for (int j = 0; j < n_clients; ++j) {
+	x[i*n_clients + j] = IloNumVar(env, 0, IloInfinity);
 	}
+	}
+	*/
+	IloNumVarArray x(env, (IloInt)(n_facilities * n_clients), (IloNum)0, IloInfinity);
+
 
 	/* set and initialize opening variables */
+	/*
 	IloNumVar *y = new IloNumVar[n_facilities];
 	//IloNumVar y[n_facilities];
 	for (int i = 0; i < n_facilities; ++i)
-		y[i] = IloNumVar(env, 0, IloInfinity);
+	y[i] = IloNumVar(env, 0, IloInfinity);
+	*/
+	IloNumVarArray y(env, (IloInt)n_facilities, (IloNum)0, IloInfinity);
+
 
 	/* set ranges of sums of connection variables (1 <= sum_i(x_ij) <= 1 for all j) */
+	/*
 	IloExpr * sum_expr = new IloExpr[n_clients];
 	IloRange * sum_condition = new IloRange[n_clients];
 	//IloExpr sum_expr[n_clients];
 	//IloRange sum_condition[n_clients];
 	for (int j = 0; j < n_clients; ++j) {
-		sum_expr[j] = IloExpr(env);
+	sum_expr[j] = IloExpr(env);
+	for (int i = 0; i < n_facilities; ++i) {
+	sum_expr[j] += x[i*n_clients + j];
+	}
+	sum_condition[j] = (sum_expr[j] == 1.0);
+	}
+	*/
+	IloExprArray sum_expr(env);
+	IloRangeArray sum_condition(env);
+	for (int j = 0; j < n_clients; ++j) {
+		sum_expr.add(IloExpr(env));
 		for (int i = 0; i < n_facilities; ++i) {
 			sum_expr[j] += x[i*n_clients + j];
 		}
-		sum_condition[j] = (sum_expr[j] == 1.0);
+		sum_condition.add(sum_expr[j] == 1.0);
 	}
 
 
+
 	/* set ranges of connection variables and opening variables (-inf <= x_ij - y_i <= 0 for all i, j) */
+	/*
 	IloRange * x_range = new IloRange[n_clients * n_facilities];
 	//IloRange x_range[n_clients * n_facilities];
 	for (int i = 0; i < n_facilities; ++i) {
+	for (int j = 0; j < n_clients; ++j) {
+	x_range[i * n_clients + j] = IloRange(env, -IloInfinity, 0);
+	x_range[i * n_clients + j].setLinearCoef(x[i*n_clients + j], 1);
+	x_range[i * n_clients + j].setLinearCoef(y[i], -1);
+	}
+	}
+	*/
+	IloRangeArray x_range(env);
+	for (int i = 0; i < n_facilities; ++i) {
 		for (int j = 0; j < n_clients; ++j) {
-			x_range[i * n_clients + j] = IloRange(env, -IloInfinity, 0);
+			x_range.add(IloRange(env, -IloInfinity, 0));
 			x_range[i * n_clients + j].setLinearCoef(x[i*n_clients + j], 1);
 			x_range[i * n_clients + j].setLinearCoef(y[i], -1);
 		}
@@ -75,14 +107,19 @@ double FacilityLocation::LP_solve(void)
 	}
 
 	/* compile the model */
+	/*
 	IloModel model(env);
 	for (int j = 0; j < n_clients; ++j) {
-		//model.add(sum_range[j]);
-		model.add(sum_condition[j]);
-		for (int i = 0; i < n_facilities; ++i) {
-			model.add(x_range[i*n_clients + j]);
-		}
+	//model.add(sum_range[j]);
+	model.add(sum_condition[j]);
+	for (int i = 0; i < n_facilities; ++i) {
+	model.add(x_range[i*n_clients + j]);
 	}
+	}
+	*/
+	IloModel model(env);
+	model.add(sum_condition);
+	model.add(x_range);
 	model.add(obj);
 
 	/* solve the model */
@@ -100,10 +137,79 @@ double FacilityLocation::LP_solve(void)
 		this->opening_variable[i] = solver.getValue(y[i]);
 		for (int j = 0; j < n_clients; ++j) {
 			this->connection_variable[i][j] = solver.getValue(x[i*n_clients + j]);
-			if(CompareDoubleUlps(this->connection_variable[i][j], 0.0) != 0 && CompareDoubleUlps(this->connection_cost[i][j], _HUGE_ENUF) == 0)
-				cout <<"Facility "<<i<<" "<<"Client "<<j<<" "<< this->connection_variable[i][j] << endl;
 		}
 	}
+	return solver.getObjValue();
+}
+
+double FacilityLocation::get_optimal(void)
+{
+	IloEnv env;
+
+	/* set and initialize connection variables */
+	IloIntVarArray x(env, (IloInt)(n_facilities * n_clients), (IloInt)0, IloInfinity);
+
+
+	/* set and initialize opening variables */
+	IloIntVarArray y(env, (IloInt)n_facilities, (IloInt)0, IloInfinity);
+
+
+	/* set ranges of sums of connection variables (1 <= sum_i(x_ij) <= 1 for all j) */
+	IloExprArray sum_expr(env);
+	IloRangeArray sum_condition(env);
+	for (int j = 0; j < n_clients; ++j) {
+		sum_expr.add(IloExpr(env));
+		for (int i = 0; i < n_facilities; ++i) {
+			sum_expr[j] += x[i*n_clients + j];
+		}
+		sum_condition.add(sum_expr[j] == 1.0);
+	}
+
+
+
+	/* set ranges of connection variables and opening variables (-inf <= x_ij - y_i <= 0 for all i, j) */
+	IloRangeArray x_range(env);
+	for (int i = 0; i < n_facilities; ++i) {
+		for (int j = 0; j < n_clients; ++j) {
+			x_range.add(IloRange(env, -IloInfinity, 0));
+			x_range[i * n_clients + j].setLinearCoef(x[i*n_clients + j], 1);
+			x_range[i * n_clients + j].setLinearCoef(y[i], -1);
+		}
+	}
+
+	/* set the obj fct (minimize sum_i(y_i*f_i) + sum_{i,j}(x_ij*d(i,j)) )*/
+	IloObjective obj = IloMinimize(env, 0);
+	for (int i = 0; i < n_facilities; ++i) {
+		obj.setLinearCoef(y[i], this->opening_cost[i]);
+		for (int j = 0; j < n_clients; ++j) {
+			obj.setLinearCoef(x[i*n_clients + j], this->connection_cost[i][j]);
+		}
+	}
+
+	/* compile the model */
+	IloModel model(env);
+	model.add(sum_condition);
+	model.add(x_range);
+	model.add(obj);
+
+	/* solve the model */
+	IloCplex solver(model);
+	try {
+		solver.solve();
+	}
+	catch (IloException &ex) {
+		cerr << ex << endl;
+	}
+	cout << solver.getObjValue() << endl;
+	cout << solver.getValue(x[0]) << endl;
+	/* save results*/
+	for (int i = 0; i < n_facilities; ++i) {
+		this->opening_variable[i] = solver.getValue(y[i]);
+		for (int j = 0; j < n_clients; ++j) {
+			this->connection_variable[i][j] = solver.getValue(x[i*n_clients + j]);
+		}
+	}
+
 	return solver.getObjValue();
 }
 
@@ -129,8 +235,7 @@ void FacilityLocation::round(void)
 
 
 	/* Preprocessing */
-
-	// initialize costs (3 ~ 5)
+	// initialize copied opening & connection costs (3 ~ 5) with opening & connection costs
 	for (int i = 0; i < n_facilities; i++) {
 		for (int j = 0; j < n_clients; j++) {
 			copied_opening_cost[i][j] = opening_cost[i];  // The copied facilities are defined to have the same opening cost as the original.
@@ -145,7 +250,7 @@ void FacilityLocation::round(void)
 		}
 	}
 	
-	// opening variable, connection variable (y', x')
+	// initialize opening variable, connection variable (y', x') as 0
 	for (int i = 0; i < n_facilities; i++) {
 		for (int j = 0; j < n_clients; j++) {
 			copied_opening_variable[i][j] = 0.0; 
@@ -160,7 +265,7 @@ void FacilityLocation::round(void)
 		}
 	}
 
-	/// assign values to y', x' (6 ~ 14)
+	/// assign values to y', x' (6 ~ 14) [Spreading Facility]
 	for (int i = 0; i < n_facilities; i++) {
 		// connection variable index sorting (6 ~ 8)
 		size_t *increasing_index;
@@ -190,21 +295,20 @@ void FacilityLocation::round(void)
 				copied_connection_variable[i][i_][increasing_index[j]] = copied_opening_variable[i][i_];
 			}
 		}
-
 	}
 	///
 
 	// initialize copied_opening_table all 0 (15)
 	for (int i = 0; i < n_facilities; i++) {
 		for (int j = 0; j < n_clients; j++) {
-			copied_opening_table[i][j] = 0;
+			copied_opening_table[i][j] = false;
 		}
 	}
 	// initialize copied_connection_table all 0
 	for (int i = 0; i < n_facilities; i++) {
 		for (int i_ = 0; i_ < n_clients; i_++) {
 			for (int j = 0; j < n_clients; j++) {
-				copied_connection_table[i][i_][j] = 0;
+				copied_connection_table[i][i_][j] = false;
 			}
 		}
 	}
@@ -319,9 +423,8 @@ void FacilityLocation::round(void)
 			if (connection_table[i][j] == true)
 				connected_facility = i;
 		}
-		cout << j << "th client's connection sum: " << sum << ", connected facility is " << connected_facility << "connection cost is " << connection_cost[connected_facility][j] << endl;
+		cout << j << "th client's connection sum: " << sum << ", connected facility is " << connected_facility << ", connection cost is " << connection_cost[connected_facility][j] << endl;
 	}
-
 	/////////
 	/* Calculate Cost ( objective function ) */
 	double total_opening_cost = 0, total_connection_cost = 0.0;
@@ -457,7 +560,7 @@ FacilityLocation::FacilityLocation(int argc, char* argv[])
 		opening_variable = new double[n_facilities];
 		connection_variable = new double*[n_facilities];
 		for (int i = 0; i < n_facilities; ++i) {
-			exponential_clock[i] = new double[n_clients];
+			connection_variable[i] = new double[n_clients];
 		}
 
 		/* memory allocation of the expoential clocks of the facilities */
@@ -467,7 +570,7 @@ FacilityLocation::FacilityLocation(int argc, char* argv[])
 			exponential_clock[i] = new double[n_clients];
 		}
 
-		/* memory allocation & generation of the orders of the clients */
+		/* memory allocation & generation of clock_of_client */
 		// set some values:
 		for (int i = 0; i < n_clients; ++i) myvector.push_back(i); // 1 2 3 4 5 6 7 8 9
 																   // using built-in random generator:

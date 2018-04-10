@@ -20,9 +20,9 @@ using namespace std;
 
 class FacilityLocation {
 private:
-
 	int n_facilities;
 	int n_clients;
+
 	/* Rounded problem's objective function's cost */
 	double rounded_cost;
 
@@ -65,6 +65,7 @@ public:
 
 	/* solve the LP-relaxed facility location problem */
 	double LP_solve();
+	double get_optimal();
 
 	/* round the LP-relaxed solution to the original problem's solution */
 	void round();
