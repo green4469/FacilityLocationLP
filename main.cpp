@@ -15,7 +15,9 @@ int main(int argc, char* argv[]) // argv : file name (ex: FLP_IN_0001.txt)
 {
 	double LP;
 	double RS;
+	int iteration = 0;
 	do {
+		std::srand(unsigned(std::time(NULL)) + ++iteration * 10);
 		FacilityLocation *fl = new FacilityLocation(argc, argv);
 		printf("다만들어써\n");
 		/// Debug
@@ -28,6 +30,8 @@ int main(int argc, char* argv[]) // argv : file name (ex: FLP_IN_0001.txt)
 		LP = sol;
 		cout << "The obj val of relaxation : " << sol << endl;
 		cout << endl;
+
+		//cout << "The optimal val : " << fl->get_optimal() << endl;
 
 		/* Find rounded solution */
 		fl->round();
@@ -61,7 +65,8 @@ int main(int argc, char* argv[]) // argv : file name (ex: FLP_IN_0001.txt)
 		}
 
 		delete fl;
-	} while (CompareDoubleUlps(LP, RS) == 0);
+	} while (1);
+	//} while (CompareDoubleUlps(LP, RS) == 0);
 	return 0;
 }
 
