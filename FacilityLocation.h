@@ -13,8 +13,8 @@
 
 using namespace std;
 
-#define NUM_OF_F 1000
-#define NUM_OF_C 1000
+#define NUM_OF_F 10
+#define NUM_OF_C 100
 #define CONNECTION_COST_MAX 100
 
 
@@ -116,6 +116,7 @@ public:
 	int get_n_clients() {
 		return n_clients;
 	}
+	void triangular_inequality();
 };
 
 int CompareDoubleUlps(double x, double y, int ulpsTolerance = 4);

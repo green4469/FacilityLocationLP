@@ -26,7 +26,7 @@ int CompareDoubleUlps(double x, double y, int UlpsTolerance)
 double FacilityLocation::LP_solve(void)
 {
 	IloEnv env;
-
+	env.setDeleter(IloSafeDeleterMode);
 	/* set and initialize connection variables */
 	/*
 	IloNumVar * x = new IloNumVar[n_facilities * n_clients];
@@ -107,19 +107,19 @@ double FacilityLocation::LP_solve(void)
 	}
 
 	/* compile the model */
-	/*
+	
 	IloModel model(env);
 	for (int j = 0; j < n_clients; ++j) {
-	//model.add(sum_range[j]);
-	model.add(sum_condition[j]);
-	for (int i = 0; i < n_facilities; ++i) {
-	model.add(x_range[i*n_clients + j]);
+		//model.add(sum_range[j]);
+		model.add(sum_condition[j]);
+		for (int i = 0; i < n_facilities; ++i) {
+			model.add(x_range[i*n_clients + j]);
+		}
 	}
-	}
-	*/
-	IloModel model(env);
-	model.add(sum_condition);
-	model.add(x_range);
+	
+	//IloModel model(env);
+	//model.add(sum_condition);
+	//model.add(x_range);
 	model.add(obj);
 
 	/* solve the model */
@@ -139,7 +139,18 @@ double FacilityLocation::LP_solve(void)
 			this->connection_variable[i][j] = solver.getValue(x[i*n_clients + j]);
 		}
 	}
-	return solver.getObjValue();
+	double objval = solver.getObjValue();
+	/* delete objects */
+	solver.end();
+	model.end();
+	obj.end();
+	x_range.end();
+	sum_condition.end();
+	sum_expr.end();
+	y.end();
+	x.end();
+	env.end();
+	return objval;
 }
 
 double FacilityLocation::get_optimal(void)
@@ -147,11 +158,11 @@ double FacilityLocation::get_optimal(void)
 	IloEnv env;
 
 	/* set and initialize connection variables */
-	IloIntVarArray x(env, (IloInt)(n_facilities * n_clients), (IloInt)0, IloInfinity);
+	IloIntVarArray x(env, (IloInt)(n_facilities * n_clients), (IloInt)0, INT_MAX);
 
 
 	/* set and initialize opening variables */
-	IloIntVarArray y(env, (IloInt)n_facilities, (IloInt)0, IloInfinity);
+	IloIntVarArray y(env, (IloInt)n_facilities, (IloInt)0, INT_MAX);
 
 
 	/* set ranges of sums of connection variables (1 <= sum_i(x_ij) <= 1 for all j) */
@@ -456,7 +467,6 @@ FacilityLocation::FacilityLocation(int argc, char* argv[])
 	case 1: //random sapmle
 		this->n_facilities = NUM_OF_F;
 		this->n_clients = NUM_OF_C;
-		std::srand(unsigned(std::time(0)));
 		/* memory allocation of opening_cost(f), connection_cost(d) */
 		opening_cost = new double[n_facilities]; // dynamic allocation
 		for (int i = 0; i < n_facilities; i++) {
@@ -569,6 +579,8 @@ FacilityLocation::FacilityLocation(int argc, char* argv[])
 		cout << "f" << i << ": " << opening_cost[i] << endl;
 		}
 		*/
+
+		triangular_inequality();
 		break;
 	case 2: // input file
 		ifstream in(argv[1]);
@@ -610,7 +622,6 @@ FacilityLocation::FacilityLocation(int argc, char* argv[])
 		}
 
 		/* memory allocation of the expoential clocks of the facilities */
-		std::srand(unsigned(std::time(0)));
 		exponential_clock = new double*[n_facilities];
 		for (int i = 0; i < n_facilities; ++i) {
 			exponential_clock[i] = new double[n_clients];
@@ -675,6 +686,22 @@ FacilityLocation::FacilityLocation(int argc, char* argv[])
 			connection_table[i] = new bool[n_clients];
 		}
 
+		
+		for (int i = 0; i < n_facilities; i++) {
+			for (int j = 0; j < n_clients; j++) {
+				cout << connection_cost[i][j] << '\t';
+			}
+			cout << endl;
+		}
+		
+		triangular_inequality();
+		cout << endl << "There should be no inf" << endl << endl;
+		for (int i = 0; i < n_facilities; i++) {
+			for (int j = 0; j < n_clients; j++) {
+				cout << connection_cost[i][j] << '\t';
+			}
+			cout << endl;
+		}
 		break;
 	}
 }
@@ -753,4 +780,87 @@ FacilityLocation::~FacilityLocation()
 		delete[] connection_table[i];
 	}
 	delete[] connection_table;
+}
+
+int minDistance(double dist[], bool sptSet[], unsigned int V)
+{
+	// Initialize min value
+	double min = DBL_MAX;
+	int min_index;
+
+	for (int v = 0; v < V; v++)
+		if (sptSet[v] == false && dist[v] <= min)
+			min = dist[v], min_index = v;
+
+	return min_index;
+}
+
+void FacilityLocation::triangular_inequality(void) {
+	/* Redefine the bipartite graph */
+	double **graph = new double*[n_clients + n_facilities];
+	for (int i = 0; i < n_clients + n_facilities; ++i) {
+		graph[i] = new double[n_clients + n_facilities];
+		for (int j = 0; j < n_clients + n_facilities; ++j) {
+			graph[i][j] = 1e+200;
+		}
+	}
+	/* draw the graph */
+	for (int i = 0; i < n_facilities; ++i) {
+		for (int j = 0; j < n_clients; ++j) {
+			graph[i + n_clients][j] = connection_cost[i][j];
+			graph[j][i + n_clients] = connection_cost[i][j];
+		}
+	}
+	/* for each client */
+	for (int j = 0; j < n_clients; ++j) {
+		/* get shortest paths for each facility */
+		int src = j;
+		double *dist = new double[n_clients + n_facilities];     // The output array.  dist[i] will hold the shortest
+																 // distance from src to i
+
+		bool *sptSet = new bool[n_clients + n_facilities]; // sptSet[i] will true if vertex i is included in shortest
+														   // path tree or shortest distance from src to i is finalized
+
+														   // Initialize all distances as INFINITE and stpSet[] as false
+		for (int i = 0; i < n_clients + n_facilities; i++)
+			dist[i] = DBL_MAX, sptSet[i] = false;
+
+		// Distance of source vertex from itself is always 0
+		dist[src] = 0;
+
+		// Find shortest path for all vertices
+		for (int count = 0; count < n_clients + n_facilities - 1; count++)
+		{
+			// Pick the minimum distance vertex from the set of vertices not
+			// yet processed. u is always equal to src in first iteration.
+			int u = minDistance(dist, sptSet, n_clients + n_facilities);
+
+			// Mark the picked vertex as processed
+			sptSet[u] = true;
+
+			// Update dist value of the adjacent vertices of the picked vertex.
+			for (int v = 0; v < n_clients + n_facilities; v++)
+
+				// Update dist[v] only if is not in sptSet, there is an edge from 
+				// u to v, and total weight of path from src to  v through u is 
+				// smaller than current value of dist[v]
+
+				if (!sptSet[v] && graph[u][v] && CompareDoubleUlps(dist[u], DBL_MAX) != 0
+					&& CompareDoubleUlps(dist[u] + graph[u][v], dist[v]) < 0)
+					dist[v] = dist[u] + graph[u][v];
+		}
+
+		/* assign min(dist[u], e(i, src)) to connection_cost[i][src] for each facility i */
+		for (int i = n_clients; i < this->n_facilities; ++i) {
+			if (dist[i] < this->connection_cost[i][src])
+				this->connection_cost[i][src] = dist[i];
+		}
+		delete dist;
+		delete sptSet;
+
+	}
+	for (int i = 0; i < n_clients + n_facilities; ++i) {
+		delete graph[i];
+	}
+	delete graph;
 }
