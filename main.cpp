@@ -16,10 +16,57 @@ int main(int argc, char* argv[]) // argv : file name (ex: FLP_IN_0001.txt)
 	double LP;
 	double RS;
 	int iteration = 0;
+
+	int file_num = -1;
+	while (true) {
+		ifstream fin;
+		string in_file = "FLP_IN\\FLP_IN_";
+		file_num++;
+		string number;
+		if (file_num / 10 == 0) {
+			number = "000" + to_string(file_num);
+		}
+		else if (file_num / 100 == 0) {
+			number = "00" + to_string(file_num);
+		}
+		else if (file_num / 1000 == 0) {
+			number = "0" + to_string(file_num);
+		}
+		else {
+			number = to_string(file_num);
+		}
+		in_file.append(number).append(".TXT");
+		fin.open(in_file, ifstream::in);
+		if (fin.fail() == true)
+			break;
+	}
+
 	do {
+		string in_file = "FLP_IN\\FLP_IN_";
+		string number;
+		if (file_num / 10 == 0) {
+			number = "000" + to_string(file_num);
+		}
+		else if (file_num / 100 == 0) {
+			number = "00" + to_string(file_num);
+		}
+		else if (file_num / 1000 == 0) {
+			number = "0" + to_string(file_num);
+		}
+		else {
+			number = to_string(file_num);
+		}
+		in_file.append(number).append(".TXT");
+		string out_file_summary = "FLP_OUT\\FLP_OUT.TXT";
+		//string out_file = in_file;
+		//out_file = replace_all(out_file, "IN", "OUT");
+		string out_file = "FLP_OUT\\FLP_OUT_EDGE_CUT.TXT";
+
+
 		std::srand(unsigned(std::time(NULL)) + ++iteration * 10);
 		FacilityLocation *fl = new FacilityLocation(argc, argv);
-		printf("다만들어써\n");
+		//printf("다만들어써\n");
+
 		/// Debug
 		int n_facilities = fl->get_n_facilities();
 		int n_clients = fl->get_n_clients();
@@ -39,6 +86,54 @@ int main(int argc, char* argv[]) // argv : file name (ex: FLP_IN_0001.txt)
 		cout << "The obj val of rounding alg : " << (rounded_cost = fl->get_rounded_cost()) << endl;
 		RS = rounded_cost;
 		//print_contents<bool>(oot, oct);
+
+
+		if (CompareDoubleUlps(LP, RS) != 0) {
+			ofstream fout_result(out_file, ofstream::out | ofstream::app);
+			ofstream fout_one(in_file);
+			ofstream fout_summary(out_file_summary, ofstream::out | ofstream::app);
+			double duality_gap;
+			duality_gap = RS / LP;
+			/* summary file */
+			fout_summary << file_num << "," << fl->n_facilities << "," << fl->n_clients << "," << duality_gap << endl;
+			
+			/* each input file */
+			fout_one << fl->n_facilities << endl;
+			fout_one << fl->n_clients << endl;
+			for (int i = 0; i < fl->n_facilities; i++) {
+				fout_one << fl->opening_cost[i] << " ";
+			}
+			fout_one << endl;
+			for (int i = 0; i < fl->n_facilities; i++) {
+				for (int j = 0; j < fl->n_clients; j++) {
+						fout_one << i << " " << j << " " << fl->connection_cost[i][j] << endl;
+				}
+			}
+
+			/* result file */
+			fout_result << file_num << ',' << LP << ',';
+			fout_result << RS << ',';
+			for (int i = 0; i < fl->n_facilities; i++) {
+				if (fl->opening_table[i] == true) {
+					fout_result << i << " ";
+				}
+			}
+			fout_result << ',';
+
+			for (int i = 0; i < fl->n_facilities; i++) {
+				for (int j = 0; j < fl->n_clients; j++) {
+					if (fl->connection_table[i][j] == true)
+						fout_result << i << "-" << j << ',';
+				}
+			}
+			fout_result << endl;
+
+			file_num++;
+		}
+
+
+
+
 
 		if (argc == 2) {
 			string out_file;

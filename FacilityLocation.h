@@ -19,7 +19,7 @@ using namespace std;
 
 
 class FacilityLocation {
-private:
+public:
 	int n_facilities;
 	int n_clients;
 
@@ -56,7 +56,7 @@ private:
 	bool* opening_table = NULL; // [NUM_OF_F]; // check
 	bool** connection_table = NULL; // [NUM_OF_F][NUM_OF_C]; check
 
-public:
+//public:
 	/* constructor, inside it initialize the oppening cost, connection cost, clients' clocks, facilities' clocks */
 	FacilityLocation(int argc, char* argv[]);
 

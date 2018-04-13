@@ -686,15 +686,17 @@ FacilityLocation::FacilityLocation(int argc, char* argv[])
 			connection_table[i] = new bool[n_clients];
 		}
 
-		
+		/*
 		for (int i = 0; i < n_facilities; i++) {
 			for (int j = 0; j < n_clients; j++) {
 				cout << connection_cost[i][j] << '\t';
 			}
 			cout << endl;
 		}
+		*/
 		
 		triangular_inequality();
+		/*
 		cout << endl << "There should be no inf" << endl << endl;
 		for (int i = 0; i < n_facilities; i++) {
 			for (int j = 0; j < n_clients; j++) {
@@ -702,6 +704,7 @@ FacilityLocation::FacilityLocation(int argc, char* argv[])
 			}
 			cout << endl;
 		}
+		*/
 		break;
 	}
 }
@@ -851,9 +854,9 @@ void FacilityLocation::triangular_inequality(void) {
 		}
 
 		/* assign min(dist[u], e(i, src)) to connection_cost[i][src] for each facility i */
-		for (int i = n_clients; i < this->n_facilities; ++i) {
-			if (dist[i] < this->connection_cost[i][src])
-				this->connection_cost[i][src] = dist[i];
+		for (int i = n_clients; i < this->n_facilities + this->n_clients; ++i) {
+			if (dist[i] < this->connection_cost[i - n_clients][src])
+				this->connection_cost[i - n_clients][src] = dist[i];
 		}
 		delete dist;
 		delete sptSet;
