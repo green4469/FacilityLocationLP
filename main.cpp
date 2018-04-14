@@ -22,18 +22,11 @@ int main(int argc, char* argv[]) // argv : file name (ex: FLP_IN_0001.txt)
 		ifstream fin;
 		string in_file = "FLP_IN\\FLP_IN_";
 		file_num++;
-		string number;
-		if (file_num / 10 == 0) {
-			number = "000" + to_string(file_num);
-		}
-		else if (file_num / 100 == 0) {
-			number = "00" + to_string(file_num);
-		}
-		else if (file_num / 1000 == 0) {
-			number = "0" + to_string(file_num);
-		}
-		else {
-			number = to_string(file_num);
+		string number = "0000000";
+		int parsing = file_num;
+		for (int i = 0; parsing > 0; i++) {
+			number[6 - i] = (parsing % 10) + '0';
+			parsing /= 10;
 		}
 		in_file.append(number).append(".TXT");
 		fin.open(in_file, ifstream::in);
@@ -43,29 +36,22 @@ int main(int argc, char* argv[]) // argv : file name (ex: FLP_IN_0001.txt)
 
 	do {
 		string in_file = "FLP_IN\\FLP_IN_";
-		string number;
-		if (file_num / 10 == 0) {
-			number = "000" + to_string(file_num);
-		}
-		else if (file_num / 100 == 0) {
-			number = "00" + to_string(file_num);
-		}
-		else if (file_num / 1000 == 0) {
-			number = "0" + to_string(file_num);
-		}
-		else {
-			number = to_string(file_num);
+		string number = "0000000";
+		int parsing = file_num;
+		for (int i = 0; parsing > 0; i++) {
+			number[6 - i] = (parsing % 10) + '0';
+			parsing /= 10;
 		}
 		in_file.append(number).append(".TXT");
 		string out_file_summary = "FLP_OUT\\FLP_OUT.TXT";
 		//string out_file = in_file;
 		//out_file = replace_all(out_file, "IN", "OUT");
-		string out_file = "FLP_OUT\\FLP_OUT_EDGE_CUT.TXT";
+		string out_file = "FLP_OUT\\FLP_OUT_CONNECTION.TXT";
 
 
 		std::srand(unsigned(std::time(NULL)) + ++iteration * 10);
 		FacilityLocation *fl = new FacilityLocation(argc, argv);
-		//printf("다만들어써\n");
+		printf("다만들어써\n");
 
 		/// Debug
 		int n_facilities = fl->get_n_facilities();
@@ -88,12 +74,15 @@ int main(int argc, char* argv[]) // argv : file name (ex: FLP_IN_0001.txt)
 		//print_contents<bool>(oot, oct);
 
 
-		if (CompareDoubleUlps(LP, RS) != 0) {
+		if (true){//CompareDoubleUlps(LP, RS) != 0) {
 			ofstream fout_result(out_file, ofstream::out | ofstream::app);
 			ofstream fout_one(in_file);
 			ofstream fout_summary(out_file_summary, ofstream::out | ofstream::app);
 			double duality_gap;
-			duality_gap = RS / LP;
+			if (CompareDoubleUlps(RS, 0) == 0 && CompareDoubleUlps(LP, 0) == 0)
+				duality_gap = 1;
+			else
+				duality_gap = RS / LP;
 			/* summary file */
 			fout_summary << file_num << "," << fl->n_facilities << "," << fl->n_clients << "," << duality_gap << endl;
 			
@@ -160,7 +149,7 @@ int main(int argc, char* argv[]) // argv : file name (ex: FLP_IN_0001.txt)
 		}
 
 		delete fl;
-	} while (1);
+	} while (iteration < 3000000);
 	//} while (CompareDoubleUlps(LP, RS) == 0);
 	return 0;
 }

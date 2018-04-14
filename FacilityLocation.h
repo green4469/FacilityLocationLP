@@ -13,7 +13,7 @@
 
 using namespace std;
 
-#define NUM_OF_F 10
+#define NUM_OF_F 100
 #define NUM_OF_C 100
 #define CONNECTION_COST_MAX 100
 
