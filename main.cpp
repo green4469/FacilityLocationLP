@@ -1,107 +1,60 @@
-#ifndef _HEADER_
-#define _HEADER_
 #include "FacilityLocation.h"
-#endif
-string replace_all(
-	__in const std::string &message,
-	__in const std::string &pattern,
-	__in const std::string &replace
-);
-
-template <typename T>
-void print_contents(T a, T b);
 
 int main(int argc, char* argv[]) // argv : file name (ex: FLP_IN_0001.txt)
 {
-	double LP;
-	double RS;
-	int iteration = 0;
-	do {
-		std::srand(unsigned(std::time(NULL)) + ++iteration * 10);
-		FacilityLocation *fl = new FacilityLocation(argc, argv);
-		printf("다만들어써\n");
-		/// Debug
-		int n_facilities = fl->get_n_facilities();
-		int n_clients = fl->get_n_clients();
-		///
+	double LP = 0.0;
+	double RS = 0.0;
+	double IG = 0.0;
 
-		/* LP solver sovle the relaxed problem */
-		double sol = fl->LP_solve();
-		LP = sol;
-		cout << "The obj val of relaxation : " << sol << endl;
-		cout << endl;
+	clock_t RT_LP, RT_RD;
 
-		//cout << "The optimal val : " << fl->get_optimal() << endl;
+	FacilityLocation *FL = new FacilityLocation(argc, argv);
 
-		/* Find rounded solution */
-		fl->round();
-		double rounded_cost;
-		cout << "The obj val of rounding alg : " << (rounded_cost = fl->get_rounded_cost()) << endl;
-		RS = rounded_cost;
-		//print_contents<bool>(oot, oct);
+	RT_LP = clock();
+	LP = FL->LP_solve();
+	RT_LP = clock() - RT_LP;
+	RT_RD = clock();
+	RS = FL->round();
+	IG = RS / LP;
+	RT_RD = clock() - RT_RD;
 
-		if (argc == 2) {
-			string out_file;
-			out_file = argv[1];
-			out_file = replace_all(out_file, "IN", "OUT");
-			ofstream out(out_file);
-			out << sol << endl;
-			out << rounded_cost << endl;
-			bool* opening_table = fl->get_opening_table();
-			for (int i = 0; i < n_facilities; i++) {
-				if (opening_table[i] == true) {
-					out << i << " ";
-				}
-			}
-			out << endl;
-			bool ** connection_table = fl->get_connection_table();
-			for (int i = 0; i < n_facilities; i++) {
-				for (int j = 0; j < n_clients; j++) {
-					if (connection_table[i][j] == true) {
-						out << i << "-" << j << endl;
-					}
-				}
-			}
+	float RT_LP_S = ((float)RT_LP) / CLOCKS_PER_SEC;
+	float RT_RD_S = ((float)RT_RD) / CLOCKS_PER_SEC;
+
+
+	cout << "Relexed Solution: " << LP << endl;
+	cout << "Rounded Solution: " << RS << endl;
+	cout << "Integrality Gap: " << IG << endl;
+	cout << "Running Time: " << RT_LP_S << " + " << RT_RD_S << " = " << RT_LP_S + RT_RD_S << endl;
+
+	string fnum;
+	string fname = argv[1];
+	fnum.append(fname, 9, 7);
+	cout << "fnum: " << fnum << endl;
+
+	ofstream fout("FLP_OUT.TXT", ofstream::out | ofstream::app);
+	fout << fnum << ' ' << FL->n_facilities << ' ' << FL->n_clients << ' ' << LP << ' ' << RS << ' ' << IG  << ' ' << RT_LP_S << ' ' << RT_RD_S << ' ' << RT_LP_S + RT_RD_S << endl;
+	
+	if (argc == 3) {  // Save LP solver's output
+		ofstream fout_LP("FLP_OUT_LP.TXT", ofstream::out | ofstream::app);
+		fout_LP << fnum << endl;
+
+		for (int i = 0; i < FL->n_facilities - 1; i++) {
+			fout_LP << FL->opening_variable[i] << ' ';
 		}
+		fout_LP << FL->opening_variable[FL->n_facilities - 1] << endl;
 
-		delete fl;
-	} while (1);
-	//} while (CompareDoubleUlps(LP, RS) == 0);
+		for (int i = 0; i < FL->n_facilities; i++) {
+			for (int j = 0; j < FL->n_clients - 1; j++) {
+				fout_LP << FL->connection_variable[i][j] << ' ';
+			}
+			fout_LP << FL->connection_variable[i][FL->n_clients - 1] << endl;
+		}
+	}
+
+	delete FL;
+	
+
+
 	return 0;
-}
-
-template <typename T>
-void print_contents(T a, T b)
-{
-	for (int i = 0; i < NUM_OF_F; ++i) {
-		cout << "y[" << i << "]: " << a[i] << endl;
-	}
-
-	cout << endl;
-	for (int i = 0; i < NUM_OF_F; ++i) {
-		for (int j = 0; j < NUM_OF_C; ++j) {
-			cout << "x[" << i << "," << j << "]: " << b[i][j] << ' ';
-			//printf("%x\n", b[i*NUM_OF_C + j]);
-		}
-	}
-	cout << endl;
-}
-
-string replace_all(
-	__in const std::string &message,
-	__in const std::string &pattern,
-	__in const std::string &replace
-) {
-
-	std::string result = message;
-	std::string::size_type pos = 0;
-	std::string::size_type offset = 0;
-
-	while ((pos = result.find(pattern, offset)) != std::string::npos)
-	{
-		result.replace(result.begin() + pos, result.begin() + pos + pattern.size(), replace);
-		offset = pos + replace.size();
-	}
-
-	return result;
 }

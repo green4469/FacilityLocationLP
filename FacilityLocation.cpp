@@ -1,7 +1,5 @@
-﻿#ifndef _HEADER_
-#define _HEADER_
-#include "FacilityLocation.h"
-#endif
+﻿#include "FacilityLocation.h"
+
 int CompareDoubleUlps(double x, double y, int UlpsTolerance)
 {
 	double diff = x - y;
@@ -238,7 +236,34 @@ vector<size_t> sort_indexes(const vector<T> &v) {
 	return idx;
 }
 
-void FacilityLocation::round(void)
+void FacilityLocation::post_process(void)
+{
+	for (int j = 0; j < n_clients; j++) {
+		/* Find the index of original connected facility */
+		int connected_facility_index = 0;
+		for (int i = 0; i < n_facilities; i++) {
+			if (connection_table[i][j] == true) {
+				connected_facility_index = i;
+			}
+		}
+
+		/* Among opened facilities, find the facility whose connection cost between itself and the client */
+		double min_connection_cost = connection_cost[connected_facility_index][j];
+		int min_facility_index = connected_facility_index;
+		for (int i = 0; i < n_facilities; i++) {
+			if ((opening_table[i] == true) and (CompareDoubleUlps(connection_cost[i][j], min_connection_cost) == -1)) {
+				min_connection_cost = connection_cost[i][j];
+				min_facility_index = i;
+			}
+		}
+
+		/* Disconnect original connection & connect to the optimal facility */
+		connection_table[connected_facility_index][j] = false;
+		connection_table[min_facility_index][j] = true;
+	}
+}
+
+double FacilityLocation::round(void)
 {
 	/* Assumes 'opening_variable' and 'connection_variable' are already calculated by LP-solver.
 	Return the rounded solution of above two variables each in 'opening_table', 'connection_table'.
@@ -453,9 +478,14 @@ void FacilityLocation::round(void)
 		total_opening_cost += opening_table[i] * opening_cost[i];
 	}
 
+	/* Connect optimally */
+	post_process();
+
 	rounded_cost = total_opening_cost + total_connection_cost;
 	delete order_of_client;
+	return rounded_cost;
 }
+
 
 int myrandom(int i) { return std::rand() % i; }
 FacilityLocation::FacilityLocation(int argc, char* argv[])
@@ -463,247 +493,107 @@ FacilityLocation::FacilityLocation(int argc, char* argv[])
 	std::vector<int> myvector;
 	std::default_random_engine generator;
 	int i;
-	switch (argc) {
-	case 1: //random sapmle
-		this->n_facilities = NUM_OF_F;
-		this->n_clients = NUM_OF_C;
-		/* memory allocation of opening_cost(f), connection_cost(d) */
-		opening_cost = new double[n_facilities]; // dynamic allocation
-		for (int i = 0; i < n_facilities; i++) {
-			opening_cost[i] = (double)rand() / RAND_MAX * (CONNECTION_COST_MAX - 1) + 1;
-		}
-		connection_cost = new double*[n_facilities]; // dynamic allocation
-		for (int i = 0; i < n_facilities; i++) {
-			connection_cost[i] = new double[n_clients]; // dynamic allocation
-		}
-		for (int i = 0, j = 0; i < n_facilities;) {
-			// connection_cost[i][j] = (double)rand() % 100 + 1;
-			connection_cost[i][j] = (double)rand() / RAND_MAX * (CONNECTION_COST_MAX - 1) + 1;
-			j++;
-			if (j == n_clients) {
-				i++;
-				j = 0;
-			}
-		}
-		/* memory allocation of opening_variable(y), connection_variable(x)*/
-		opening_variable = new double[n_facilities];
-		connection_variable = new double*[n_facilities];
-		for (int i = 0; i < n_facilities; ++i) {
-			connection_variable[i] = new double[n_clients];
-		}
 
-		/* Memory allocation of the expoential clocks of the facilities */
-		
-		exponential_clock = new double*[n_facilities]; // dynamic allocation
-		for (int i = 0; i < n_facilities; ++i) {
-			exponential_clock[i] = new double[n_clients]; // dynamic allocation
-		}
-	
-		/* memory allocation & generation of clock_of_client */
-		// set some values:
-		for (int i = 0; i < n_clients; ++i) myvector.push_back(i); // 1 2 3 4 5 6 7 8 9
-																  // using built-in random generator:
-		std::random_shuffle(myvector.begin(), myvector.end());
-		// using myrandom:
-		std::random_shuffle(myvector.begin(), myvector.end(), myrandom);
-		i = 0;
-		clock_of_client = new int[n_clients]; // dynamic allocation
-		for (std::vector<int>::iterator it = myvector.begin(); it != myvector.end(); ++it, ++i)
-			clock_of_client[i] = *it;
+	ifstream in(argv[1]);
+	in >> n_facilities;
+	in >> n_clients;
+	cout << "n_facilities = " << n_facilities << endl;
+	cout << "n_clients = " << n_clients << endl;
 
-		/* memory allocation of copied_opening_cost(f'), copied_connection_cost(d') */
-		copied_opening_cost = new double*[n_facilities];
-		for (int i = 0; i < n_facilities; ++i) {
-			copied_opening_cost[i] = new double[n_clients];
-		}
-		copied_connection_cost = new double**[n_facilities];
-		for (int i = 0; i < n_facilities; i++) {
-			copied_connection_cost[i] = new double*[n_clients];
-			for (int i_ = 0; i_ < n_clients; i_++) {
-				copied_connection_cost[i][i_] = new double[n_clients];
-			}
-		}
-
-		/* memory allocation of copied_opening_variable(y'), copied_connection_variable(x') */
-		copied_opening_variable = new double*[n_facilities];
-		for (int i = 0; i < n_facilities; ++i) {
-			copied_opening_variable[i] = new double[n_clients];
-		}
-		copied_connection_variable = new double**[n_facilities];
-		for (int i = 0; i < n_facilities; i++) {
-			copied_connection_variable[i] = new double*[n_clients];
-			for (int i_ = 0; i_ < n_clients; i_++) {
-				copied_connection_variable[i][i_] = new double[n_clients];
-			}
-		}
-
-		/* memory allocation of copied_opening_table(M), copied_connection_table(M') */
-		copied_opening_table = new bool*[n_facilities];
-		for (int i = 0; i < n_facilities; ++i) {
-			copied_opening_table[i] = new bool[n_clients];
-		}
-		copied_connection_table = new bool**[n_facilities];
-		for (int i = 0; i < n_facilities; i++) {
-			copied_connection_table[i] = new bool*[n_clients];
-			for (int i_ = 0; i_ < n_clients; i_++) {
-				copied_connection_table[i][i_] = new bool[n_clients];
-			}
-		}
-
-		/* memory allocation of opening_table, connection_table */
-		opening_table = new bool[n_facilities];
-		connection_table = new bool*[n_facilities];
-		for (int i = 0; i < n_facilities; i++) {
-			connection_table[i] = new bool[n_clients];
-		}
-
-		
-
-		// print out content:
-		/*
-		for (int i = 0; i < n_clients; i++) {
-		cout << "c" << i << ": " << clock_of_client[i] << endl;
-		}
-		for (int i = 0; i < n_facilities; i++) {
-		cout << "f" << i << ": " << exponential_clock[i] << endl;
-		}
-		cout << "---------cost---------------" << endl;
-		*/
-
-		/*
-		for (int i = 0; i < n_facilities*n_clients; i++) {
-		cout << "c" << i << ": " << connection_cost[i] << endl;
-		}
-
-		for (int i = 0; i < n_facilities; i++) {
-		cout << "f" << i << ": " << opening_cost[i] << endl;
-		}
-		*/
-
-		triangular_inequality();
-		break;
-	case 2: // input file
-		ifstream in(argv[1]);
-		in >> n_facilities;
-		in >> n_clients;
-		cout << "n_facilities = " << n_facilities << endl;
-		cout << "n_clients = " << n_clients << endl;
-
-		/* memory allocation of opening_cost(f), connection_cost(d) */
-		opening_cost = new double[n_facilities];
-		for (int i = 0; i < n_facilities; i++) {
-			in >> opening_cost[i];
-		}
-		/*
-		cout << "------- opening cost ----------\n";
-		for (int i = 0; i < n_facilities; i++) {
-			cout << "f" << i << ": " << opening_cost[i] << endl;
-		}
-		*/
-		//cout << "--------- connection cost ---------- \n";
-		connection_cost = new double*[n_facilities]; // dynamic allocation
-		for (int i = 0; i < n_facilities; i++) {
-			connection_cost[i] = new double[n_clients]; // dynamic allocation
-			for (int j = 0; j < n_clients; j++) {
-				connection_cost[i][j] = _HUGE_ENUF;
-			}
-		}
-		int f, c;
-		while (in) {
-			in >> f >> c;
-			in >> connection_cost[f][c];
-		}
-
-		/* memory allocation of opening_variable(y), connection_variable(x)*/
-		opening_variable = new double[n_facilities];
-		connection_variable = new double*[n_facilities];
-		for (int i = 0; i < n_facilities; ++i) {
-			connection_variable[i] = new double[n_clients];
-		}
-
-		/* memory allocation of the expoential clocks of the facilities */
-		exponential_clock = new double*[n_facilities];
-		for (int i = 0; i < n_facilities; ++i) {
-			exponential_clock[i] = new double[n_clients];
-		}
-
-		/* memory allocation & generation of clock_of_client */
-		// set some values:
-		for (int i = 0; i < n_clients; ++i) myvector.push_back(i); // 1 2 3 4 5 6 7 8 9
-																   // using built-in random generator:
-		std::random_shuffle(myvector.begin(), myvector.end());
-
-		// using myrandom:
-		std::random_shuffle(myvector.begin(), myvector.end(), myrandom);
-		i = 0;
-		clock_of_client = new int[n_clients]; // dynamic allocation
-		for (std::vector<int>::iterator it = myvector.begin(); it != myvector.end(); ++it, ++i)
-			clock_of_client[i] = *it;
-
-		/* memory allocation of copied_opening_cost(f'), copied_connection_cost(d') */
-		copied_opening_cost = new double*[n_facilities];
-		for (int i = 0; i < n_facilities; ++i) {
-			copied_opening_cost[i] = new double[n_clients];
-		}
-		copied_connection_cost = new double**[n_facilities];
-		for (int i = 0; i < n_facilities; i++) {
-			copied_connection_cost[i] = new double*[n_clients];
-			for (int i_ = 0; i_ < n_clients; i_++) {
-				copied_connection_cost[i][i_] = new double[n_clients];
-			}
-		}
-
-		/* memory allocation of copied_opening_variable(y'), copied_connection_variable(x') */
-		copied_opening_variable = new double*[n_facilities];
-		for (int i = 0; i < n_facilities; ++i) {
-			copied_opening_variable[i] = new double[n_clients];
-		}
-		copied_connection_variable = new double**[n_facilities];
-		for (int i = 0; i < n_facilities; i++) {
-			copied_connection_variable[i] = new double*[n_clients];
-			for (int i_ = 0; i_ < n_clients; i_++) {
-				copied_connection_variable[i][i_] = new double[n_clients];
-			}
-		}
-
-		/* memory allocation of copied_opening_table(M), copied_connection_table(M') */
-		copied_opening_table = new bool*[n_facilities];
-		for (int i = 0; i < n_facilities; ++i) {
-			copied_opening_table[i] = new bool[n_clients];
-		}
-		copied_connection_table = new bool**[n_facilities];
-		for (int i = 0; i < n_facilities; i++) {
-			copied_connection_table[i] = new bool*[n_clients];
-			for (int i_ = 0; i_ < n_clients; i_++) {
-				copied_connection_table[i][i_] = new bool[n_clients];
-			}
-		}
-
-		/* memory allocation of opening_table, connection_table */
-		opening_table = new bool[n_facilities];
-		connection_table = new bool*[n_facilities];
-		for (int i = 0; i < n_facilities; i++) {
-			connection_table[i] = new bool[n_clients];
-		}
-
-		
-		for (int i = 0; i < n_facilities; i++) {
-			for (int j = 0; j < n_clients; j++) {
-				cout << connection_cost[i][j] << '\t';
-			}
-			cout << endl;
-		}
-		
-		triangular_inequality();
-		cout << endl << "There should be no inf" << endl << endl;
-		for (int i = 0; i < n_facilities; i++) {
-			for (int j = 0; j < n_clients; j++) {
-				cout << connection_cost[i][j] << '\t';
-			}
-			cout << endl;
-		}
-		break;
+	/* memory allocation of opening_cost(f), connection_cost(d) */
+	opening_cost = new double[n_facilities];
+	for (int i = 0; i < n_facilities; i++) {
+		in >> opening_cost[i];
 	}
+
+	connection_cost = new double*[n_facilities]; // dynamic allocation
+	for (int i = 0; i < n_facilities; i++) {
+		connection_cost[i] = new double[n_clients]; // dynamic allocation
+		for (int j = 0; j < n_clients; j++) {
+			connection_cost[i][j] = _HUGE_ENUF;
+		}
+	}
+	int f, c;
+	while (in) {
+		in >> f >> c;
+		in >> connection_cost[f][c];
+	}
+
+	/* memory allocation of opening_variable(y), connection_variable(x)*/
+	opening_variable = new double[n_facilities];
+	connection_variable = new double*[n_facilities];
+	for (int i = 0; i < n_facilities; ++i) {
+		connection_variable[i] = new double[n_clients];
+	}
+
+	/* memory allocation of the expoential clocks of the facilities */
+	exponential_clock = new double*[n_facilities];
+	for (int i = 0; i < n_facilities; ++i) {
+		exponential_clock[i] = new double[n_clients];
+	}
+
+	/* memory allocation & generation of clock_of_client */
+	// set some values:
+	for (int i = 0; i < n_clients; ++i) myvector.push_back(i); // 1 2 3 4 5 6 7 8 9
+															   // using built-in random generator:
+	std::random_shuffle(myvector.begin(), myvector.end());
+
+	// using myrandom:
+	std::random_shuffle(myvector.begin(), myvector.end(), myrandom);
+	i = 0;
+	clock_of_client = new int[n_clients]; // dynamic allocation
+	for (std::vector<int>::iterator it = myvector.begin(); it != myvector.end(); ++it, ++i)
+		clock_of_client[i] = *it;
+
+	/* memory allocation of copied_opening_cost(f'), copied_connection_cost(d') */
+	copied_opening_cost = new double*[n_facilities];
+	for (int i = 0; i < n_facilities; ++i) {
+		copied_opening_cost[i] = new double[n_clients];
+	}
+	copied_connection_cost = new double**[n_facilities];
+	for (int i = 0; i < n_facilities; i++) {
+		copied_connection_cost[i] = new double*[n_clients];
+		for (int i_ = 0; i_ < n_clients; i_++) {
+			copied_connection_cost[i][i_] = new double[n_clients];
+		}
+	}
+
+	/* memory allocation of copied_opening_variable(y'), copied_connection_variable(x') */
+	copied_opening_variable = new double*[n_facilities];
+	for (int i = 0; i < n_facilities; ++i) {
+		copied_opening_variable[i] = new double[n_clients];
+	}
+	copied_connection_variable = new double**[n_facilities];
+	for (int i = 0; i < n_facilities; i++) {
+		copied_connection_variable[i] = new double*[n_clients];
+		for (int i_ = 0; i_ < n_clients; i_++) {
+			copied_connection_variable[i][i_] = new double[n_clients];
+		}
+	}
+
+	/* memory allocation of copied_opening_table(M), copied_connection_table(M') */
+	copied_opening_table = new bool*[n_facilities];
+	for (int i = 0; i < n_facilities; ++i) {
+		copied_opening_table[i] = new bool[n_clients];
+	}
+	copied_connection_table = new bool**[n_facilities];
+	for (int i = 0; i < n_facilities; i++) {
+		copied_connection_table[i] = new bool*[n_clients];
+		for (int i_ = 0; i_ < n_clients; i_++) {
+			copied_connection_table[i][i_] = new bool[n_clients];
+		}
+	}
+
+	/* memory allocation of opening_table, connection_table */
+	opening_table = new bool[n_facilities];
+	connection_table = new bool*[n_facilities];
+	for (int i = 0; i < n_facilities; i++) {
+		connection_table[i] = new bool[n_clients];
+	}
+
+	triangular_inequality();
+
+
 }
 
 FacilityLocation::~FacilityLocation()
@@ -851,9 +741,9 @@ void FacilityLocation::triangular_inequality(void) {
 		}
 
 		/* assign min(dist[u], e(i, src)) to connection_cost[i][src] for each facility i */
-		for (int i = n_clients; i < this->n_facilities; ++i) {
-			if (dist[i] < this->connection_cost[i][src])
-				this->connection_cost[i][src] = dist[i];
+		for (int i = n_clients; i < this->n_facilities + this->n_clients; ++i) {
+			if (dist[i] < this->connection_cost[i - n_clients][src])
+				this->connection_cost[i - n_clients][src] = dist[i];
 		}
 		delete dist;
 		delete sptSet;

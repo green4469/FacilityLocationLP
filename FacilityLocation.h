@@ -10,16 +10,16 @@
 #include <cstdlib>      // std::rand, std::srand
 #include <math.h>
 #include <numeric>		// std::iota
+#include <string>
+#include <time.h>
 
 using namespace std;
 
-#define NUM_OF_F 10
-#define NUM_OF_C 100
 #define CONNECTION_COST_MAX 100
 
 
 class FacilityLocation {
-private:
+public:
 	int n_facilities;
 	int n_clients;
 
@@ -56,7 +56,7 @@ private:
 	bool* opening_table = NULL; // [NUM_OF_F]; // check
 	bool** connection_table = NULL; // [NUM_OF_F][NUM_OF_C]; check
 
-public:
+//public:
 	/* constructor, inside it initialize the oppening cost, connection cost, clients' clocks, facilities' clocks */
 	FacilityLocation(int argc, char* argv[]);
 
@@ -68,7 +68,9 @@ public:
 	double get_optimal();
 
 	/* round the LP-relaxed solution to the original problem's solution */
-	void round();
+	double round();
+
+	void post_process();
 
 	double get_optimal_cost() {
 		return this->optimal_cost;
