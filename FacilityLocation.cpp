@@ -247,7 +247,7 @@ void FacilityLocation::post_process(void)
 			}
 		}
 
-		/* Among opened facilities, find the facility whose connection cost between itself and the client */
+		/* Among opened facilities, find the facility whose connection cost between itself and the client is minimum */
 		double min_connection_cost = connection_cost[connected_facility_index][j];
 		int min_facility_index = connected_facility_index;
 		for (int i = 0; i < n_facilities; i++) {
@@ -354,6 +354,8 @@ double FacilityLocation::round(void)
 	for (int i = 0; i < n_facilities; ++i) {
 		for (int i_ = 0; i_ < n_clients; i_++) {
 			double y_i = copied_opening_variable[i][i_];
+			int seed = std::chrono::system_clock::now().time_since_epoch().count();
+			std::default_random_engine generator(seed);
 			std::exponential_distribution<double> distribution(y_i);
 			exponential_clock[i][i_] = distribution(generator);
 			if (CompareDoubleUlps(y_i, 0.0) == 0) {
